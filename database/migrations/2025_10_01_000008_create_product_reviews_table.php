@@ -11,10 +11,12 @@ return new class extends Migration
         Schema::create('product_reviews', function (Blueprint $table) {
             $table->id('review_id');
             $table->foreignId('product_id')->constrained('products', 'product_id');
-            $table->foreignId('user_id')->constrained('users', 'user_id');
+            $table->unsignedBigInteger('customer_id');
             $table->integer('rating');
             $table->text('review')->nullable();
             $table->timestamp('created_at')->useCurrent();
+
+            $table->foreign('customer_id')->references('customer_id')->on('customers')->onDelete('cascade');
         });
     }
 

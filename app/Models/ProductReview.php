@@ -15,15 +15,15 @@ class ProductReview extends Model
 
     protected $fillable = [
         'product_id',
-        'user_id',
+        'customer_id', // changed from user_id
         'rating',
         'review',
         'created_at',
     ];
 
-    public function user()
+    public function customer()
     {
-        return $this->belongsTo(User::class, 'user_id', 'user_id');
+        return $this->belongsTo(Customer::class, 'customer_id', 'customer_id');
     }
 
     public function product()

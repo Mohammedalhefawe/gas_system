@@ -2,10 +2,8 @@
 
 namespace App\Models;
 
-
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-
 
 class UserAddress extends Model
 {
@@ -16,7 +14,7 @@ class UserAddress extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'user_id',
+        'customer_id', 
         'address',
         'city',
         'latitude',
@@ -25,8 +23,8 @@ class UserAddress extends Model
         'created_at',
     ];
 
-    public function user()
+    public function customer()
     {
-        return $this->belongsTo(User::class, 'user_id', 'user_id');
+        return $this->belongsTo(Customer::class, 'customer_id', 'customer_id');
     }
 }

@@ -6,16 +6,15 @@ use App\Models\ProductReview;
 use Illuminate\Http\Request;
 use App\Http\Responses\ApiResponse;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Storage;
-use Exception;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use Exception;
 
 class ProductReviewController extends Controller
 {
     public function index()
     {
         try {
-            $reviews = ProductReview::all();
+            $reviews = ProductReview::with('customer.user', 'product')->get();
             return ApiResponse::success('Reviews retrieved successfully', ['reviews' => $reviews]);
         } catch (Exception $e) {
             return ApiResponse::error('Failed to retrieve reviews', $e->getMessage(), 500);
@@ -30,6 +29,11 @@ class ProductReviewController extends Controller
                 return ApiResponse::error('Unauthenticated', null, 401);
             }
 
+            $customer = $user->customer;
+            if (!$customer) {
+                return ApiResponse::error('Customer record not found', null, 404);
+            }
+
             $validator = Validator::make($request->all(), [
                 'product_id' => 'required|exists:products,product_id',
                 'rating' => 'required|numeric|min:1|max:5',
@@ -42,7 +46,7 @@ class ProductReviewController extends Controller
 
             $review = ProductReview::create([
                 'product_id' => $request->product_id,
-             'user_id' => $user->user_id,
+                'customer_id' => $customer->customer_id, // بدل user_id
                 'rating' => $request->rating,
                 'review' => $request->review,
             ]);
@@ -74,13 +78,17 @@ class ProductReviewController extends Controller
                 return ApiResponse::error('Unauthenticated', null, 401);
             }
 
+            $customer = $user->customer;
+            if (!$customer) {
+                return ApiResponse::error('Customer record not found', null, 404);
+            }
+
             $review = ProductReview::find($id);
             if (!$review) {
                 return ApiResponse::error('Review not found', null, 404);
             }
 
-            // Ensure the review belongs to the authenticated user
-            if ($review->user_id !== $user->user_id) {
+            if ($review->customer_id !== $customer->customer_id) {
                 return ApiResponse::error('Unauthorized', null, 403);
             }
 
@@ -109,13 +117,17 @@ class ProductReviewController extends Controller
                 return ApiResponse::error('Unauthenticated', null, 401);
             }
 
+            $customer = $user->customer;
+            if (!$customer) {
+                return ApiResponse::error('Customer record not found', null, 404);
+            }
+
             $review = ProductReview::find($id);
             if (!$review) {
                 return ApiResponse::error('Review not found', null, 404);
             }
 
-            // Ensure the review belongs to the authenticated user
-            if ($review->user_id !== $user->id) {
+            if ($review->customer_id !== $customer->customer_id) {
                 return ApiResponse::error('Unauthorized', null, 403);
             }
 

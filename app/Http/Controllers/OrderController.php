@@ -13,13 +13,15 @@ use Exception;
 
 class OrderController extends Controller
 {
-    // Add a new order
+    // إضافة طلب جديد
     public function store(Request $request)
     {
         try {
             $user = JWTAuth::parseToken()->authenticate();
-            if (!$user) {
-                return ApiResponse::error('Unauthenticated', null, 401);
+            $customer = $user->customer;
+
+            if (!$customer) {
+                return ApiResponse::error('Customer record not found', null, 404);
             }
 
             $request->validate([
@@ -32,7 +34,6 @@ class OrderController extends Controller
                 'delivery_time' => 'required|date_format:H:i',
             ]);
 
-            // احسب مجموع السعر لكل العناصر
             $total_amount = 0;
             foreach ($request->items as $item) {
                 $product = Product::find($item['product_id']);
@@ -40,13 +41,11 @@ class OrderController extends Controller
                 $total_amount += $product->price * $item['quantity'];
             }
 
-            // جلب آخر delivery_fee محدث
             $lastFee = DeliveryFee::latest('updated_at')->first();
             $delivery_fee = $lastFee ? $lastFee->fee : 0;
 
-            // إنشاء الطلب
             $order = Order::create([
-                'user_id' => $user->user_id,
+                'customer_id' => $customer->customer_id,
                 'address_id' => $request->address_id,
                 'total_amount' => $total_amount,
                 'delivery_fee' => $delivery_fee,
@@ -57,7 +56,6 @@ class OrderController extends Controller
                 'delivery_time' => $request->delivery_time,
             ]);
 
-            // إضافة عناصر الطلب
             foreach ($request->items as $item) {
                 $product = Product::find($item['product_id']);
                 if (!$product) continue;
@@ -77,12 +75,16 @@ class OrderController extends Controller
         }
     }
 
-    // Cancel order
+    // إلغاء طلب
     public function cancel($order_id)
     {
         try {
             $user = JWTAuth::parseToken()->authenticate();
-            $order = Order::where('order_id', $order_id)->where('user_id', $user->user_id)->first();
+            $customer = $user->customer;
+
+            $order = Order::where('order_id', $order_id)
+                          ->where('customer_id', $customer->customer_id)
+                          ->first();
 
             if (!$order) {
                 return ApiResponse::error('Order not found', null, 404);
@@ -99,24 +101,33 @@ class OrderController extends Controller
         }
     }
 
-    // Get my orders
+    // عرض طلبات العميل
     public function myOrders()
     {
         try {
             $user = JWTAuth::parseToken()->authenticate();
-            $orders = Order::with('items.product', 'address')->where('user_id', $user->user_id)->get();
+            $customer = $user->customer;
+
+            $orders = Order::with('items.product', 'address')
+                           ->where('customer_id', $customer->customer_id)
+                           ->get();
+
             return ApiResponse::success('Orders retrieved successfully', ['orders' => $orders]);
         } catch (Exception $e) {
             return ApiResponse::error('Failed to retrieve orders', $e->getMessage(), 500);
         }
     }
 
-    // Add review and rating if order is completed
+    // إضافة تقييم و مراجعة للطلب بعد اكتماله
     public function addReview(Request $request, $order_id)
     {
         try {
             $user = JWTAuth::parseToken()->authenticate();
-            $order = Order::where('order_id', $order_id)->where('user_id', $user->user_id)->first();
+            $customer = $user->customer;
+
+            $order = Order::where('order_id', $order_id)
+                          ->where('customer_id', $customer->customer_id)
+                          ->first();
 
             if (!$order) {
                 return ApiResponse::error('Order not found', null, 404);
@@ -142,22 +153,24 @@ class OrderController extends Controller
         }
     }
 
-    // Get all orders (for admin or user)
+    // عرض كل الطلبات (للمسؤول أو المستخدم)
     public function index()
     {
         try {
-            $orders = Order::with('items.product', 'address', 'user')->get();
+            $orders = Order::with('items.product', 'address', 'customer')->get();
             return ApiResponse::success('Orders retrieved successfully', ['orders' => $orders]);
         } catch (Exception $e) {
             return ApiResponse::error('Failed to retrieve orders', $e->getMessage(), 500);
         }
     }
 
-    // Get single order by ID
+    // عرض طلب محدد
     public function show($order_id)
     {
         try {
-            $order = Order::with('items.product', 'address', 'user')->where('order_id', $order_id)->first();
+            $order = Order::with('items.product', 'address', 'customer')
+                          ->where('order_id', $order_id)
+                          ->first();
 
             if (!$order) {
                 return ApiResponse::error('Order not found', null, 404);

@@ -14,7 +14,7 @@ class Order extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'user_id',
+        'customer_id', 
         'driver_id',
         'address_id',
         'total_amount',
@@ -31,9 +31,9 @@ class Order extends Model
         'review',
     ];
 
-    public function user()
+    public function customer()
     {
-        return $this->belongsTo(User::class, 'user_id', 'user_id');
+        return $this->belongsTo(Customer::class, 'customer_id', 'customer_id');
     }
 
     public function driver()

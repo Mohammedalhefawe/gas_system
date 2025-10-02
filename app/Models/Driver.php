@@ -4,10 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Tymon\JWTAuth\Contracts\JWTSubject;
-use Illuminate\Foundation\Auth\User as Authenticatable;
 
-class Driver extends Authenticatable implements JWTSubject
+class Driver extends Model
 {
     use HasFactory;
 
@@ -16,30 +14,19 @@ class Driver extends Authenticatable implements JWTSubject
     public $timestamps = false;
 
     protected $fillable = [
-        'full_name',
-        'phone_number',
+        'user_id',
         'vehicle_type',
         'license_number',
-        'password',
         'is_available',
         'current_location',
         'rating',
         'max_capacity',
     ];
-    
-    protected $hidden = [
-        'password',
-    ];
 
-    // Implement JWTSubject methods
-    public function getJWTIdentifier()
+    // Relations
+    public function user()
     {
-        return $this->getKey();
-    }
-
-    public function getJWTCustomClaims()
-    {
-        return [];
+        return $this->belongsTo(User::class, 'user_id', 'user_id');
     }
 
     public function orders()

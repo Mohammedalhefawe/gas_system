@@ -10,11 +10,9 @@ return new class extends Migration
     {
         Schema::create('drivers', function (Blueprint $table) {
             $table->id('driver_id');
-            $table->string('full_name');
-            $table->string('phone_number')->unique();
-            $table->string('password');
+            $table->foreignId('user_id')->constrained('users', 'user_id')->onDelete('cascade');
             $table->string('vehicle_type');
-            $table->string('license_number')->unique();
+            $table->string('license_number');
             $table->boolean('is_available')->default(true);
             $table->string('current_location')->nullable();
             $table->decimal('rating', 3, 2)->default(0.0);

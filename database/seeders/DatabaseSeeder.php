@@ -2,9 +2,10 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use App\Models\User;
+use App\Models\Role;
+use App\Models\Customer;
 
 class DatabaseSeeder extends Seeder
 {
@@ -13,11 +14,19 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        // أولاً نضيف الأدوار
+        $this->call(RoleSeeder::class);
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+        // مثال لإضافة مستخدم Admin
+        $adminRole = Role::where('name', 'admin')->first();
+
+        User::updateOrCreate(
+            ['phone_number' => '0956012469'],
+            [
+                'password' => bcrypt('123456'),
+                'role_id' => $adminRole->role_id,
+                'is_verified' => true,
+            ]
+        );
     }
 }

@@ -11,16 +11,18 @@ use Exception;
 
 class UserAddressController extends Controller
 {
-    // استعراض كل العناوين للمستخدم
+    // استعراض كل العناوين للعميل
     public function index()
     {
         try {
             $user = JWTAuth::parseToken()->authenticate();
-            if (!$user) {
-                return ApiResponse::error('Unauthenticated', null, 401);
+            $customer = $user->customer;
+
+            if (!$customer) {
+                return ApiResponse::error('Customer record not found', null, 404);
             }
 
-            $addresses = UserAddress::where('user_id', $user->user_id)->get();
+            $addresses = UserAddress::where('customer_id', $customer->customer_id)->get();
             return ApiResponse::success('Addresses retrieved successfully', ['addresses' => $addresses]);
         } catch (Exception $e) {
             return ApiResponse::error('Failed to retrieve addresses', $e->getMessage(), 500);
@@ -32,8 +34,13 @@ class UserAddressController extends Controller
     {
         try {
             $user = JWTAuth::parseToken()->authenticate();
-            $address = UserAddress::where('user_id', $user->user_id)->find($id);
+            $customer = $user->customer;
 
+            if (!$customer) {
+                return ApiResponse::error('Customer record not found', null, 404);
+            }
+
+            $address = UserAddress::where('customer_id', $customer->customer_id)->find($id);
             if (!$address) {
                 return ApiResponse::error('Address not found', null, 404);
             }
@@ -49,6 +56,11 @@ class UserAddressController extends Controller
     {
         try {
             $user = JWTAuth::parseToken()->authenticate();
+            $customer = $user->customer;
+
+            if (!$customer) {
+                return ApiResponse::error('Customer record not found', null, 404);
+            }
 
             $validator = Validator::make($request->all(), [
                 'address' => 'required|string|max:255',
@@ -63,7 +75,7 @@ class UserAddressController extends Controller
             }
 
             $address = UserAddress::create([
-                'user_id' => $user->user_id,
+                'customer_id' => $customer->customer_id,
                 'address' => $request->address,
                 'city' => $request->city,
                 'latitude' => $request->latitude,
@@ -82,8 +94,13 @@ class UserAddressController extends Controller
     {
         try {
             $user = JWTAuth::parseToken()->authenticate();
-            $address = UserAddress::where('user_id', $user->user_id)->find($id);
+            $customer = $user->customer;
 
+            if (!$customer) {
+                return ApiResponse::error('Customer record not found', null, 404);
+            }
+
+            $address = UserAddress::where('customer_id', $customer->customer_id)->find($id);
             if (!$address) {
                 return ApiResponse::error('Address not found', null, 404);
             }
@@ -113,8 +130,13 @@ class UserAddressController extends Controller
     {
         try {
             $user = JWTAuth::parseToken()->authenticate();
-            $address = UserAddress::where('user_id', $user->user_id)->find($id);
+            $customer = $user->customer;
 
+            if (!$customer) {
+                return ApiResponse::error('Customer record not found', null, 404);
+            }
+
+            $address = UserAddress::where('customer_id', $customer->customer_id)->find($id);
             if (!$address) {
                 return ApiResponse::error('Address not found', null, 404);
             }
