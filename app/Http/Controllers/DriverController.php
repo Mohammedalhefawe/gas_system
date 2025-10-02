@@ -124,7 +124,7 @@ class DriverController extends Controller
                 return ApiResponse::error('Order not ready to complete', null, 404);
             }
 
-            $order->update(['order_status' => 'completed']);
+            $order->update(['order_status' => 'completed',"payment_status" => "paid"]);
             return ApiResponse::success('Order marked as completed', ['order' => $order]);
         } catch (\Exception $e) {
             return ApiResponse::error('Failed to complete order', $e->getMessage(), 500);
