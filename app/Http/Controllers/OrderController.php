@@ -160,15 +160,23 @@ class OrderController extends Controller
     }
 
     // عرض كل الطلبات (للمسؤول أو المستخدم)
-    public function index()
-    {
-        try {
-            $orders = Order::with('items.product', 'address', 'customer')->get();
-            return ApiResponse::success('Orders retrieved successfully', ['orders' => $orders]);
-        } catch (Exception $e) {
-            return ApiResponse::error('Failed to retrieve orders', $e->getMessage(), 500);
+ public function index(Request $request)
+{
+    try {
+        $query = Order::with('items.product', 'address', 'customer');
+
+        // ✅ فلترة اختيارية حسب الحالة
+        if ($request->has('status') && !empty($request->status)) {
+            $query->where('order_status', $request->status);
         }
+
+        $orders = $query->orderBy('order_date', 'desc')->get();
+
+        return ApiResponse::success('Orders retrieved successfully', ['orders' => $orders]);
+    } catch (Exception $e) {
+        return ApiResponse::error('Failed to retrieve orders', $e->getMessage(), 500);
     }
+}
 
     // عرض طلب محدد
     public function show($order_id)

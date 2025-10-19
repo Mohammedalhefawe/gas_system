@@ -94,13 +94,14 @@ Route::middleware(['auth:api'])->group(function () {
 Route::middleware(['auth:api'])->group(function () {
     Route::prefix('customer')->group(function () {
         Route::post('/orders', [OrderController::class, 'store']);
-        Route::get('/orders', [OrderController::class, 'index']); // Get all orders
         Route::get('/orders/{order_id}', [OrderController::class, 'show']); // Get order by id
         Route::post('/orders/{order_id}/cancel', [OrderController::class, 'cancel']);
         Route::get('my-orders', [OrderController::class, 'myOrders']); // Get my orders
         Route::post('/orders/{order_id}/review', [OrderController::class, 'addReview']); // Add review
     });
 })->withoutMiddleware(['auth:api']);
+
+        Route::get('/orders', [OrderController::class, 'index']); // Get all orders
 
 
 //DELIVERY FEE
