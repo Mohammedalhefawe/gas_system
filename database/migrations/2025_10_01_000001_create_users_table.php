@@ -13,6 +13,8 @@ return new class extends Migration
             $table->string('phone_number')->unique();
             $table->string('password');
             $table->boolean('is_verified')->default(false);
+            $table->string('verification_pin')->nullable();
+            $table->timestamp('pin_expires_at')->nullable();
             $table->foreignId('role_id')->constrained('roles', 'role_id');
             $table->timestamps(0);
         });

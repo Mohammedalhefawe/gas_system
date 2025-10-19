@@ -12,9 +12,11 @@ return new class extends Migration
             $table->unsignedBigInteger('customer_id');
             $table->string('address');
             $table->string('city');
+            $table->string('floor_number')->nullable(); 
+            $table->string('address_name');
+            $table->text('details')->nullable(); 
             $table->decimal('latitude', 10, 7)->nullable();
             $table->decimal('longitude', 10, 7)->nullable();
-            $table->boolean('is_default')->default(false);
             $table->timestamps();
 
             $table->foreign('customer_id')

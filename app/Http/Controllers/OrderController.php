@@ -30,8 +30,10 @@ class OrderController extends Controller
                 'items.*.quantity' => 'required|integer|min:1',
                 'address_id' => 'required|exists:user_addresses,address_id',
                 'payment_method' => 'required|string',
-                'delivery_date' => 'required|date|after_or_equal:today',
-                'delivery_time' => 'required|date_format:H:i',
+                'immediate' => 'nullable|boolean',
+                'delivery_date' => 'required_if:immediate,false|nullable|date|after_or_equal:today',
+                'delivery_time' => 'required_if:immediate,false|nullable|date_format:H:i',
+                'note' => 'nullable|string|max:500',
             ]);
 
             $total_amount = 0;
@@ -52,8 +54,10 @@ class OrderController extends Controller
                 'order_status' => 'pending',
                 'payment_method' => $request->payment_method,
                 'payment_status' => 'pending',
-                'delivery_date' => $request->delivery_date,
-                'delivery_time' => $request->delivery_time,
+                'delivery_date' => $request->immediate ? null : $request->delivery_date,
+                'delivery_time' => $request->immediate ? null : $request->delivery_time,
+                'note' => $request->note ?? null,
+                'immediate' => $request->immediate ?? false,
             ]);
 
             foreach ($request->items as $item) {
@@ -102,21 +106,23 @@ class OrderController extends Controller
     }
 
     // عرض طلبات العميل
-    public function myOrders()
-    {
-        try {
-            $user = JWTAuth::parseToken()->authenticate();
-            $customer = $user->customer;
+   public function myOrders()
+{
+    try {
+        $user = JWTAuth::parseToken()->authenticate();
+        $customer = $user->customer;
 
-            $orders = Order::with('items.product', 'address')
-                           ->where('customer_id', $customer->customer_id)
-                           ->get();
+        $orders = Order::with('items.product', 'address')
+                       ->where('customer_id', $customer->customer_id)
+                       ->orderBy('order_date', 'desc') 
+                       ->get();
 
-            return ApiResponse::success('Orders retrieved successfully', ['orders' => $orders]);
-        } catch (Exception $e) {
-            return ApiResponse::error('Failed to retrieve orders', $e->getMessage(), 500);
-        }
+        return ApiResponse::success('Orders retrieved successfully', ['orders' => $orders]);
+    } catch (Exception $e) {
+        return ApiResponse::error('Failed to retrieve orders', $e->getMessage(), 500);
     }
+}
+
 
     // إضافة تقييم و مراجعة للطلب بعد اكتماله
     public function addReview(Request $request, $order_id)

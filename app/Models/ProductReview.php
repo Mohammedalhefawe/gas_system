@@ -15,10 +15,9 @@ class ProductReview extends Model
 
     protected $fillable = [
         'product_id',
-        'customer_id', // changed from user_id
+        'customer_id',
         'rating',
         'review',
-        'created_at',
     ];
 
     public function customer()

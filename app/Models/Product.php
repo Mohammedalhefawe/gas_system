@@ -21,7 +21,6 @@ class Product extends Model
         'price',
         'is_available',
         'special_notes',
-        'created_at',
     ];
 
     public function category()

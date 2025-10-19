@@ -19,17 +19,19 @@ class User extends Authenticatable implements JWTSubject
         'phone_number',
         'password',
         'is_verified',
+        'verification_pin',
+        'pin_expires_at',
         'role_id',
-        'created_at',
     ];
 
     protected $hidden = [
         'password',
+        'verification_pin',
+        'pin_expires_at',
     ];
 
     protected $casts = [
         'is_verified' => 'boolean',
-        'created_at' => 'datetime',
     ];
 
     // Relations

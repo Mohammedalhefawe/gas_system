@@ -67,7 +67,9 @@ class UserAddressController extends Controller
                 'city' => 'required|string|max:100',
                 'latitude' => 'nullable|numeric',
                 'longitude' => 'nullable|numeric',
-                'is_default' => 'nullable|boolean',
+                'floor_number' => 'nullable|string|max:20',
+                'address_name' => 'nullable|string|max:100',
+                'details' => 'nullable|string',
             ]);
 
             if ($validator->fails()) {
@@ -80,7 +82,9 @@ class UserAddressController extends Controller
                 'city' => $request->city,
                 'latitude' => $request->latitude,
                 'longitude' => $request->longitude,
-                'is_default' => $request->is_default ?? false,
+                'floor_number' => $request->floor_number,
+                'address_name' => $request->address_name,
+                'details' => $request->details,
             ]);
 
             return ApiResponse::success('Address created successfully', ['address' => $address], 201);
@@ -110,14 +114,16 @@ class UserAddressController extends Controller
                 'city' => 'sometimes|string|max:100',
                 'latitude' => 'nullable|numeric',
                 'longitude' => 'nullable|numeric',
-                'is_default' => 'nullable|boolean',
+                'floor_number' => 'nullable|string|max:20',
+                'address_name' => 'string|max:100',
+                'details' => 'nullable|string',
             ]);
 
             if ($validator->fails()) {
                 return ApiResponse::error('Validation failed', $validator->errors(), 422);
             }
 
-            $address->update($request->only(['address', 'city', 'latitude', 'longitude', 'is_default']));
+            $address->update($request->only(['address', 'city', 'latitude', 'longitude', 'floor_number', 'address_name', 'details']));
 
             return ApiResponse::success('Address updated successfully', ['address' => $address]);
         } catch (Exception $e) {

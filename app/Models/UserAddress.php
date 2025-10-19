@@ -11,7 +11,6 @@ class UserAddress extends Model
 
     protected $table = 'user_addresses';
     protected $primaryKey = 'address_id';
-    public $timestamps = false;
 
     protected $fillable = [
         'customer_id', 
@@ -19,8 +18,9 @@ class UserAddress extends Model
         'city',
         'latitude',
         'longitude',
-        'is_default',
-        'created_at',
+        'floor_number',
+        'address_name',
+        'details',
     ];
 
     public function customer()

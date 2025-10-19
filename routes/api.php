@@ -11,6 +11,7 @@ use App\Http\Controllers\UserAddressController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\DeliveryFeeController;
 use App\Http\Controllers\DriverController;
+use App\Http\Controllers\AdController;
 
 //AUTH
 Route::prefix('auth')->group(function () {
@@ -23,6 +24,15 @@ Route::prefix('auth')->group(function () {
 
     // General Login (for all roles)
     Route::post('login', [AuthController::class, 'login']);
+    // Customer verification
+    Route::post('customer/verify', [AuthController::class, 'verifyCustomer']);
+
+    Route::post('customer/resend-pin', [AuthController::class, 'resendCustomerPin']);
+
+    Route::post('customer/forgot-password', [AuthController::class, 'forgotPassword']);
+    Route::post('customer/verify-reset-pin', [AuthController::class, 'verifyResetPin']);
+    Route::post('customer/reset-password', [AuthController::class, 'resetPassword']);
+
 
     // Protected routes
     Route::middleware('auth:api')->group(function () {
@@ -82,24 +92,24 @@ Route::middleware(['auth:api'])->group(function () {
 
 //ORDERS
 Route::middleware(['auth:api'])->group(function () {
-Route::prefix('customer')->group(function () {
-    Route::post('/orders', [OrderController::class, 'store']);
-    Route::get('/orders', [OrderController::class, 'index']); // Get all orders
-    Route::get('/orders/{order_id}', [OrderController::class, 'show']); // Get order by id
-    Route::post('/orders/{order_id}/cancel', [OrderController::class, 'cancel']);
-    Route::get('my-orders', [OrderController::class, 'myOrders']); // Get my orders
-    Route::post('/orders/{order_id}/review', [OrderController::class, 'addReview']); // Add review
-});
+    Route::prefix('customer')->group(function () {
+        Route::post('/orders', [OrderController::class, 'store']);
+        Route::get('/orders', [OrderController::class, 'index']); // Get all orders
+        Route::get('/orders/{order_id}', [OrderController::class, 'show']); // Get order by id
+        Route::post('/orders/{order_id}/cancel', [OrderController::class, 'cancel']);
+        Route::get('my-orders', [OrderController::class, 'myOrders']); // Get my orders
+        Route::post('/orders/{order_id}/review', [OrderController::class, 'addReview']); // Add review
+    });
 })->withoutMiddleware(['auth:api']);
 
 
 //DELIVERY FEE
 //    Route::middleware(['auth:api',AdminMiddleware::class])->group(function () {
-    // Admin sets delivery fee
-    Route::post('/delivery-fee', [DeliveryFeeController::class, 'store']);
+// Admin sets delivery fee
+Route::post('/delivery-fee', [DeliveryFeeController::class, 'store']);
 
-    // Get last delivery fee
-    Route::get('/delivery-fee', [DeliveryFeeController::class, 'latest']);
+// Get last delivery fee
+Route::get('/delivery-fee', [DeliveryFeeController::class, 'latest']);
 // })->withoutMiddleware(['auth:api']);
 
 
@@ -114,6 +124,18 @@ Route::prefix('driver')->group(function () {
         Route::get('my-orders', [DriverController::class, 'myOrders']); // الطلبات الخاصة بالسائق
     });
 });
+
+
+
+// ADS
+Route::get('/ads', [AdController::class, 'index']);
+Route::get('/ads/{id}', [AdController::class, 'show']);
+Route::group(['middleware' => ['auth:api']], function () {
+    Route::post('/ads', [AdController::class, 'store']); // Admin only
+    Route::put('/ads/{id}', [AdController::class, 'update']); // Admin or owner
+    Route::delete('/ads/{id}', [AdController::class, 'destroy']); // Admin or owner
+});
+
 
 
 

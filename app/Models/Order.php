@@ -20,15 +20,15 @@ class Order extends Model
         'total_amount',
         'delivery_fee',
         'order_status',
-        'delivery_address',
         'order_date',
         'delivery_date',
         'delivery_time',
         'payment_method',
         'payment_status',
-        'special_instructions',
         'rating',
         'review',
+        'note',
+        'immediate',
     ];
 
     public function customer()

@@ -11,7 +11,7 @@ class DeliveryFee extends Model
 
     protected $table = 'delivery_fees';
     protected $primaryKey = 'fee_id';
-    public $timestamps = true;
+    public $timestamps = false;
 
     protected $fillable = [
         'fee',   
