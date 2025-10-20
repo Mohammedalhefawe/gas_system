@@ -163,7 +163,7 @@ class OrderController extends Controller
  public function index(Request $request)
 {
     try {
-        $query = Order::with('items.product', 'address', 'customer');
+        $query = Order::with('items.product', 'address', 'customer.user');
 
         // ✅ فلترة اختيارية حسب الحالة
         if ($request->has('status') && !empty($request->status)) {
@@ -171,6 +171,8 @@ class OrderController extends Controller
         }
 
         $orders = $query->orderBy('order_date', 'desc')->get();
+
+         
 
         return ApiResponse::success('Orders retrieved successfully', ['orders' => $orders]);
     } catch (Exception $e) {

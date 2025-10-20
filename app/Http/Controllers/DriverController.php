@@ -23,8 +23,8 @@ class DriverController extends Controller
             }
 
             $order = Order::where('order_id', $order_id)
-                          ->where('order_status', 'pending')
-                          ->first();
+                ->where('order_status', 'pending')
+                ->first();
 
             if (!$order) {
                 return ApiResponse::error('Order not available for acceptance', null, 404);
@@ -55,8 +55,8 @@ class DriverController extends Controller
             }
 
             $order = Order::where('order_id', $order_id)
-                          ->where('order_status', 'pending')
-                          ->first();
+                ->where('order_status', 'accepted')
+                ->first();
 
             if (!$order) {
                 return ApiResponse::error('Order not available for rejection', null, 404);
@@ -87,9 +87,9 @@ class DriverController extends Controller
             }
 
             $order = Order::where('order_id', $order_id)
-                          ->where('driver_id', $driver->driver_id)
-                          ->where('order_status', 'accepted')
-                          ->first();
+                ->where('driver_id', $driver->driver_id)
+                ->where('order_status', 'accepted')
+                ->first();
 
             if (!$order) {
                 return ApiResponse::error('Order not ready for delivery', null, 404);
@@ -116,15 +116,15 @@ class DriverController extends Controller
             }
 
             $order = Order::where('order_id', $order_id)
-                          ->where('driver_id', $driver->driver_id)
-                          ->where('order_status', 'on_the_way')
-                          ->first();
+                ->where('driver_id', $driver->driver_id)
+                ->where('order_status', 'on_the_way')
+                ->first();
 
             if (!$order) {
                 return ApiResponse::error('Order not ready to complete', null, 404);
             }
 
-            $order->update(['order_status' => 'completed',"payment_status" => "paid"]);
+            $order->update(['order_status' => 'completed', "payment_status" => "paid"]);
             return ApiResponse::success('Order marked as completed', ['order' => $order]);
         } catch (\Exception $e) {
             return ApiResponse::error('Failed to complete order', $e->getMessage(), 500);
@@ -134,6 +134,7 @@ class DriverController extends Controller
     /**
      * Get orders for this driver
      */
+
     public function myOrders()
     {
         try {
@@ -144,15 +145,37 @@ class DriverController extends Controller
                 return ApiResponse::error('Driver profile not found', null, 404);
             }
 
-            $orders = Order::with('items.product', 'address')
-                           ->where('driver_id', $driver->driver_id)
-                           ->get();
+
+            $orders = Order::with('items.product', 'address', 'customer.user')
+                ->where('driver_id', $driver->driver_id)
+                ->orderBy('order_date', 'desc')
+                ->get();
 
             return ApiResponse::success('Driver orders retrieved successfully', ['orders' => $orders]);
         } catch (\Exception $e) {
             return ApiResponse::error('Failed to retrieve orders', $e->getMessage(), 500);
         }
     }
+
+    // public function myOrders()
+    // {
+    //     try {
+    //         $user = JWTAuth::parseToken()->authenticate();
+    //         $driver = $user->driver;
+
+    //         if (!$driver) {
+    //             return ApiResponse::error('Driver profile not found', null, 404);
+    //         }
+
+    //         $orders = Order::with('items.product', 'address')
+    //                        ->where('driver_id', $driver->driver_id)
+    //                        ->get();
+
+    //         return ApiResponse::success('Driver orders retrieved successfully', ['orders' => $orders]);
+    //     } catch (\Exception $e) {
+    //         return ApiResponse::error('Failed to retrieve orders', $e->getMessage(), 500);
+    //     }
+    // }
 }
 
 
