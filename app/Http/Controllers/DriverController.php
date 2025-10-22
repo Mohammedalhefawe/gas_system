@@ -6,6 +6,7 @@ use App\Models\Order;
 use Illuminate\Http\Request;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Http\Responses\ApiResponse;
+use App\Models\Driver;
 
 class DriverController extends Controller
 {
@@ -20,6 +21,24 @@ class DriverController extends Controller
 
             if (!$driver) {
                 return ApiResponse::error('Driver profile not found', null, 404);
+            }
+
+            // ✅ منع السائق المحظور من قبول الطلبات
+            if ($driver->blocked) {
+                return ApiResponse::error('Your account is blocked, you cannot accept new orders', null, 403);
+            }
+
+            // منع قبول طلب جديد إذا عنده طلب قيد التنفيذ
+            $existingOrder = Order::where('driver_id', $driver->driver_id)
+                ->whereIn('order_status', ['accepted', 'on_the_way'])
+                ->first();
+
+            if ($existingOrder) {
+                return ApiResponse::error(
+                    'You already have an ongoing order. Complete it first.',
+                    null,
+                    400
+                );
             }
 
             $order = Order::where('order_id', $order_id)
@@ -40,6 +59,7 @@ class DriverController extends Controller
             return ApiResponse::error('Failed to accept order', $e->getMessage(), 500);
         }
     }
+
 
     /**
      * Reject order
@@ -157,25 +177,62 @@ class DriverController extends Controller
         }
     }
 
-    // public function myOrders()
-    // {
-    //     try {
-    //         $user = JWTAuth::parseToken()->authenticate();
-    //         $driver = $user->driver;
+    public function getOrdersByDriverForAdmin($driver_id)
+    {
+        try {
+            $orders = Order::with('items.product', 'address', 'customer.user')
+                ->where('driver_id', $driver_id)
+                ->orderBy('order_date', 'desc')
+                ->get();
 
-    //         if (!$driver) {
-    //             return ApiResponse::error('Driver profile not found', null, 404);
-    //         }
+            if ($orders->isEmpty()) {
+                return ApiResponse::error('No orders found for this driver', null, 404);
+            }
 
-    //         $orders = Order::with('items.product', 'address')
-    //                        ->where('driver_id', $driver->driver_id)
-    //                        ->get();
+            return ApiResponse::success('Driver orders retrieved successfully', [
+                'driver_id' => $driver_id,
+                'orders' => $orders
+            ]);
+        } catch (\Exception $e) {
+            return ApiResponse::error('Failed to retrieve driver orders', $e->getMessage(), 500);
+        }
+    }
 
-    //         return ApiResponse::success('Driver orders retrieved successfully', ['orders' => $orders]);
-    //     } catch (\Exception $e) {
-    //         return ApiResponse::error('Failed to retrieve orders', $e->getMessage(), 500);
-    //     }
-    // }
+    public function toggleBlockDriver($driver_id)
+    {
+        $driver = Driver::find($driver_id);
+
+        if (!$driver) {
+            return ApiResponse::error('Driver not found', null, 404);
+        }
+
+        $driver->blocked = !$driver->blocked;
+        $driver->save();
+
+        return ApiResponse::success(
+            $driver->blocked ? 'Driver has been blocked' : 'Driver has been unblocked',
+            ['driver' => $driver]
+        );
+    }
+
+    public function getAllDrivers()
+    {
+        try {
+            $drivers = Driver::with('user')
+                ->orderBy('driver_id', 'desc')
+                ->get();
+
+            if ($drivers->isEmpty()) {
+                return ApiResponse::error('No drivers found', null, 404);
+            }
+
+            return ApiResponse::success('Drivers retrieved successfully', [
+                'drivers' => $drivers
+            ]);
+        } catch (\Exception $e) {
+            return ApiResponse::error('Failed to retrieve drivers', $e->getMessage(), 500);
+        }
+    }
 }
 
 

@@ -17,6 +17,8 @@ class Driver extends Model
         'user_id',
         'vehicle_type',
         'license_number',
+        'full_name',
+        'blocked',
         'is_available',
         'current_location',
         'rating',

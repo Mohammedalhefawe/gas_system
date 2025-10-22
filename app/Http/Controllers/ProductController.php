@@ -28,7 +28,7 @@ class ProductController extends Controller
                 'category_id' => 'required|exists:product_categories,category_id',
                 'product_name' => 'required|string|max:255',
                 'description' => 'nullable|string',
-                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', 
+                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
                 'price' => 'required|numeric',
                 'is_available' => 'required|boolean',
                 'special_notes' => 'nullable|string',
@@ -84,7 +84,7 @@ class ProductController extends Controller
                 'category_id' => 'sometimes|exists:product_categories,category_id',
                 'product_name' => 'sometimes|string|max:255',
                 'description' => 'nullable|string',
-                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', 
+                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
                 'price' => 'sometimes|numeric',
                 'is_available' => 'sometimes|boolean',
                 'special_notes' => 'nullable|string',
@@ -94,13 +94,7 @@ class ProductController extends Controller
                 return ApiResponse::error('Validation failed', $validator->errors(), 422);
             }
 
-            if ($request->hasFile('image')) {
-                if ($product->image_url) {
-                    Storage::disk('public')->delete($product->image_url);
-                }
-                $product->image_url = $request->file('image')->store('products', 'public');
-            }
-
+            // أول شيئ: تحديث باقي البيانات
             $product->update($request->only([
                 'category_id',
                 'product_name',
@@ -108,8 +102,18 @@ class ProductController extends Controller
                 'price',
                 'is_available',
                 'special_notes',
-                'image_url',
             ]));
+
+            // إذا تم رفع صورة جديدة
+            if ($request->hasFile('image')) {
+                if ($product->image_url) {
+                    Storage::disk('public')->delete($product->image_url);
+                }
+
+                $imagePath = $request->file('image')->store('products', 'public');
+                $product->image_url = $imagePath;
+                $product->save(); // تأكيد حفظ الصورة
+            }
 
             return ApiResponse::success('Product updated successfully', ['product' => $product]);
         } catch (Exception $e) {
@@ -117,22 +121,40 @@ class ProductController extends Controller
         }
     }
 
-    public function destroy($id)
-    {
-        try {
-            $product = Product::find($id);
-            if (!$product) {
-                return ApiResponse::error('Product not found', null, 404);
-            }
 
-            if ($product->image_url) {
-                Storage::disk('public')->delete($product->image_url);
-            }
-
-            $product->delete();
-            return ApiResponse::success('Product deleted successfully');
-        } catch (Exception $e) {
-            return ApiResponse::error('Failed to delete product', $e->getMessage(), 500);
+public function destroy($id)
+{
+    try {
+        $product = Product::find($id);
+        if (!$product) {
+            return ApiResponse::error('Product not found', null, 404);
         }
+
+        // محاولة حذف المنتج، إذا مستخدم بطلب يتم إطلاق FK error
+        $product->delete();
+
+        // حذف الصورة بعد نجاح الحذف
+        if ($product->image_url) {
+            Storage::disk('public')->delete($product->image_url);
+        }
+
+        return ApiResponse::success('Product deleted successfully');
+
+    } catch (\Illuminate\Database\QueryException $e) {
+        // إذا كان الخطأ Foreign Key Constraint
+        if ($e->getCode() == "23000") {
+            return ApiResponse::error(
+                'Cannot delete this product because it is already used in one or more orders',
+                null,
+                403
+            );
+        }
+
+        return ApiResponse::error('Failed to delete product', null, 500);
+
+    } catch (\Exception $e) {
+        return ApiResponse::error('Failed to delete product', null, 500);
     }
+}
+
 }

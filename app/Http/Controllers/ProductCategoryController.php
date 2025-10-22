@@ -89,7 +89,20 @@ class ProductCategoryController extends Controller
             return ApiResponse::error('Category not found', null, 404);
         }
 
-        $category->delete();
-        return ApiResponse::success('Category deleted successfully');
+        try {
+            $category->delete();
+            return ApiResponse::success('Category deleted successfully');
+        } catch (\Illuminate\Database\QueryException $e) {
+            // رقم الخطأ 23000 يعني Foreign key constraint
+            if ($e->getCode() == "23000") {
+                return ApiResponse::error(
+                    'Cannot delete this category because it has products assigned to it. Remove or reassign the products first.',
+                    null,
+                    403 
+                );
+            }
+
+            return ApiResponse::error('Failed to delete category', $e->getMessage(), 500);
+        }
     }
 }

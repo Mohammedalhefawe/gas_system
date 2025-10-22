@@ -21,7 +21,7 @@ class DatabaseSeeder extends Seeder
         $adminRole = Role::where('name', 'admin')->first();
 
         User::updateOrCreate(
-            ['phone_number' => '0956012469'],
+            ['phone_number' => '+963956012469'],
             [
                 'password' => bcrypt('123456'),
                 'role_id' => $adminRole->role_id,

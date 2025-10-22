@@ -107,7 +107,10 @@ Route::middleware(['auth:api'])->group(function () {
 //DELIVERY FEE
 //    Route::middleware(['auth:api',AdminMiddleware::class])->group(function () {
 // Admin sets delivery fee
-Route::post('/delivery-fee', [DeliveryFeeController::class, 'store']);
+Route::post('/delivery-fee', [DeliveryFeeController::class, 'store']); 
+Route::get('/driver/{driver_id}/orders', [DriverController::class, 'getOrdersByDriverForAdmin']);
+Route::get('/drivers', [DriverController::class, 'getAllDrivers']);
+Route::patch('/drivers/{driver_id}/toggle-block', [DriverController::class, 'toggleBlockDriver']);
 
 // Get last delivery fee
 Route::get('/delivery-fee', [DeliveryFeeController::class, 'latest']);
@@ -123,6 +126,7 @@ Route::prefix('driver')->group(function () {
         Route::post('start/{order_id}', [DriverController::class, 'startDelivery']);  // بدء التوصيل
         Route::post('complete/{order_id}', [DriverController::class, 'completeOrder']); // إكمال الطلب
         Route::get('my-orders', [DriverController::class, 'myOrders']); // الطلبات الخاصة بالسائق
+
     });
 });
 
