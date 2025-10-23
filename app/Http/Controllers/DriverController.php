@@ -185,9 +185,9 @@ class DriverController extends Controller
                 ->orderBy('order_date', 'desc')
                 ->get();
 
-            if ($orders->isEmpty()) {
-                return ApiResponse::error('No orders found for this driver', null, 404);
-            }
+            // if ($orders->isEmpty()) {
+            //     return ApiResponse::error('No orders found for this driver', null, 404);
+            // }
 
             return ApiResponse::success('Driver orders retrieved successfully', [
                 'driver_id' => $driver_id,

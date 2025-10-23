@@ -108,7 +108,7 @@ Route::middleware(['auth:api'])->group(function () {
 //    Route::middleware(['auth:api',AdminMiddleware::class])->group(function () {
 // Admin sets delivery fee
 Route::post('/delivery-fee', [DeliveryFeeController::class, 'store']); 
-Route::get('/driver/{driver_id}/orders', [DriverController::class, 'getOrdersByDriverForAdmin']);
+Route::get('/drivers/{driver_id}/orders', [DriverController::class, 'getOrdersByDriverForAdmin']);
 Route::get('/drivers', [DriverController::class, 'getAllDrivers']);
 Route::patch('/drivers/{driver_id}/toggle-block', [DriverController::class, 'toggleBlockDriver']);
 
