@@ -21,11 +21,11 @@ class OrderController extends Controller
             $customer = $user->customer;
 
             if (!$customer) {
-                return ApiResponse::error('Customer record not found', null, 404);
+                return ApiResponse::error(__('messages.customer_not_found'), null, 404);
             }
 
             if ($customer->blocked) {
-                return ApiResponse::error('You are banned from placing new orders', null, 403);
+                return ApiResponse::error(__('messages.customer_blocked'), null, 403);
             }
 
             $request->validate([
@@ -77,9 +77,9 @@ class OrderController extends Controller
                 ]);
             }
 
-            return ApiResponse::success('Order created successfully', ['order' => $order], 201);
+            return ApiResponse::success(__('messages.order_created'), ['order' => $order], 201);
         } catch (Exception $e) {
-            return ApiResponse::error('Failed to create order', $e->getMessage(), 500);
+            return ApiResponse::error(__('messages.failed_to_create_order'), $e->getMessage(), 500);
         }
     }
 
@@ -95,17 +95,17 @@ class OrderController extends Controller
                 ->first();
 
             if (!$order) {
-                return ApiResponse::error('Order not found', null, 404);
+                return ApiResponse::error(__('messages.order_not_found'), null, 404);
             }
 
             if ($order->order_status !== 'pending') {
-                return ApiResponse::error('Cannot cancel this order', null, 400);
+                return ApiResponse::error(__('messages.cannot_cancel_order'), null, 400);
             }
 
             $order->update(['order_status' => 'cancelled']);
-            return ApiResponse::success('Order cancelled successfully');
+            return ApiResponse::success(__('messages.order_cancelled'));
         } catch (Exception $e) {
-            return ApiResponse::error('Failed to cancel order', $e->getMessage(), 500);
+            return ApiResponse::error(__('messages.failed_to_cancel_order'), $e->getMessage(), 500);
         }
     }
 
@@ -121,12 +121,11 @@ class OrderController extends Controller
                 ->orderBy('order_date', 'desc')
                 ->get();
 
-            return ApiResponse::success('Orders retrieved successfully', ['orders' => $orders]);
+            return ApiResponse::success(__('messages.orders_retrieved'), ['orders' => $orders]);
         } catch (Exception $e) {
-            return ApiResponse::error('Failed to retrieve orders', $e->getMessage(), 500);
+            return ApiResponse::error(__('messages.failed_to_retrieve_orders'), $e->getMessage(), 500);
         }
     }
-
 
     // عرض الطلبات حسب customer_id (للمسؤول)
     public function getOrdersByCustomer($customer_id)
@@ -138,15 +137,14 @@ class OrderController extends Controller
                 ->get();
 
             if ($orders->isEmpty()) {
-                return ApiResponse::error('No orders found for this customer', null, 404);
+                return ApiResponse::error(__('messages.no_orders_for_customer'), null, 404);
             }
 
-            return ApiResponse::success('Orders retrieved successfully', ['orders' => $orders]);
+            return ApiResponse::success(__('messages.orders_retrieved'), ['orders' => $orders]);
         } catch (Exception $e) {
-            return ApiResponse::error('Failed to retrieve orders', $e->getMessage(), 500);
+            return ApiResponse::error(__('messages.failed_to_retrieve_orders'), $e->getMessage(), 500);
         }
     }
-
 
     // إضافة تقييم و مراجعة للطلب بعد اكتماله
     public function addReview(Request $request, $order_id)
@@ -160,11 +158,11 @@ class OrderController extends Controller
                 ->first();
 
             if (!$order) {
-                return ApiResponse::error('Order not found', null, 404);
+                return ApiResponse::error(__('messages.order_not_found'), null, 404);
             }
 
             if ($order->order_status !== 'completed') {
-                return ApiResponse::error('You can only review completed orders', null, 400);
+                return ApiResponse::error(__('messages.cannot_review_order'), null, 400);
             }
 
             $request->validate([
@@ -177,9 +175,9 @@ class OrderController extends Controller
                 'review' => $request->review,
             ]);
 
-            return ApiResponse::success('Review added successfully', ['order' => $order]);
+            return ApiResponse::success(__('messages.review_added'), ['order' => $order]);
         } catch (Exception $e) {
-            return ApiResponse::error('Failed to add review', $e->getMessage(), 500);
+            return ApiResponse::error(__('messages.failed_to_add_review'), $e->getMessage(), 500);
         }
     }
 
@@ -189,18 +187,15 @@ class OrderController extends Controller
         try {
             $query = Order::with('items.product', 'address', 'customer.user');
 
-            // ✅ فلترة اختيارية حسب الحالة
             if ($request->has('status') && !empty($request->status)) {
                 $query->where('order_status', $request->status);
             }
 
             $orders = $query->orderBy('order_date', 'desc')->get();
 
-
-
-            return ApiResponse::success('Orders retrieved successfully', ['orders' => $orders]);
+            return ApiResponse::success(__('messages.orders_retrieved'), ['orders' => $orders]);
         } catch (Exception $e) {
-            return ApiResponse::error('Failed to retrieve orders', $e->getMessage(), 500);
+            return ApiResponse::error(__('messages.failed_to_retrieve_orders'), $e->getMessage(), 500);
         }
     }
 
@@ -213,12 +208,12 @@ class OrderController extends Controller
                 ->first();
 
             if (!$order) {
-                return ApiResponse::error('Order not found', null, 404);
+                return ApiResponse::error(__('messages.order_not_found'), null, 404);
             }
 
-            return ApiResponse::success('Order retrieved successfully', ['order' => $order]);
+            return ApiResponse::success(__('messages.orders_retrieved'), ['order' => $order]);
         } catch (Exception $e) {
-            return ApiResponse::error('Failed to retrieve order', $e->getMessage(), 500);
+            return ApiResponse::error(__('messages.failed_to_retrieve_orders'), $e->getMessage(), 500);
         }
     }
 }

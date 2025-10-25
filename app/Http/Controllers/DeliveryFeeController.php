@@ -21,9 +21,11 @@ class DeliveryFeeController extends Controller
                 'date' => now()->toDateString(),
             ]);
 
-            return ApiResponse::success('Delivery fee set successfully', ['delivery_fee' => $deliveryFee]);
+            return ApiResponse::success(__('messages.delivery_fee_set'), ['delivery_fee' => $deliveryFee]);
+        } catch (\Illuminate\Validation\ValidationException $ve) {
+            return ApiResponse::error(__('messages.validation_failed'), $ve->errors(), 422);
         } catch (Exception $e) {
-            return ApiResponse::error('Failed to set delivery fee', $e->getMessage(), 500);
+            return ApiResponse::error(__('messages.delivery_fee_failed'), $e->getMessage(), 500);
         }
     }
 
@@ -32,11 +34,11 @@ class DeliveryFeeController extends Controller
         try {
             $deliveryFee = DeliveryFee::latest('date')->first();
             if (!$deliveryFee) {
-                return ApiResponse::error('No delivery fee found', null, 404);
+                return ApiResponse::error(__('messages.no_delivery_fee'), null, 404);
             }
-            return ApiResponse::success('Latest delivery fee retrieved', ['delivery_fee' => $deliveryFee]);
+            return ApiResponse::success(__('messages.latest_delivery_fee'), ['delivery_fee' => $deliveryFee]);
         } catch (Exception $e) {
-            return ApiResponse::error('Failed to get delivery fee', $e->getMessage(), 500);
+            return ApiResponse::error(__('messages.delivery_fee_failed'), $e->getMessage(), 500);
         }
     }
 }

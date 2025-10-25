@@ -9,18 +9,12 @@ use App\Http\Responses\ApiResponse;
 
 class ProductCategoryController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
         $categories = ProductCategory::all();
-        return ApiResponse::success('Categories fetched successfully', ['categories' => $categories]);
+        return ApiResponse::success(__('messages.categories_fetched'), ['categories' => $categories]);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -30,7 +24,7 @@ class ProductCategoryController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return ApiResponse::error('Validation failed', $validator->errors(), 422);
+            return ApiResponse::error(__('messages.validation_failed'), $validator->errors(), 422);
         }
 
         $category = ProductCategory::create([
@@ -40,29 +34,23 @@ class ProductCategoryController extends Controller
             'created_at' => now(),
         ]);
 
-        return ApiResponse::success('Category created successfully', ['category' => $category], 201);
+        return ApiResponse::success(__('messages.category_created'), ['category' => $category], 201);
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show($id)
     {
         $category = ProductCategory::find($id);
         if (!$category) {
-            return ApiResponse::error('Category not found', null, 404);
+            return ApiResponse::error(__('messages.category_not_found'), null, 404);
         }
-        return ApiResponse::success('Category fetched successfully', ['category' => $category]);
+        return ApiResponse::success(__('messages.category_fetched'), ['category' => $category]);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, $id)
     {
         $category = ProductCategory::find($id);
         if (!$category) {
-            return ApiResponse::error('Category not found', null, 404);
+            return ApiResponse::error(__('messages.category_not_found'), null, 404);
         }
 
         $validator = Validator::make($request->all(), [
@@ -72,37 +60,29 @@ class ProductCategoryController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return ApiResponse::error('Validation failed', $validator->errors(), 422);
+            return ApiResponse::error(__('messages.validation_failed'), $validator->errors(), 422);
         }
 
         $category->update($request->only(['category_name', 'description', 'is_active']));
-        return ApiResponse::success('Category updated successfully', ['category' => $category]);
+        return ApiResponse::success(__('messages.category_updated'), ['category' => $category]);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy($id)
     {
         $category = ProductCategory::find($id);
         if (!$category) {
-            return ApiResponse::error('Category not found', null, 404);
+            return ApiResponse::error(__('messages.category_not_found'), null, 404);
         }
 
         try {
             $category->delete();
-            return ApiResponse::success('Category deleted successfully');
+            return ApiResponse::success(__('messages.category_deleted'));
         } catch (\Illuminate\Database\QueryException $e) {
-            // رقم الخطأ 23000 يعني Foreign key constraint
             if ($e->getCode() == "23000") {
-                return ApiResponse::error(
-                    'Cannot delete this category because it has products assigned to it. Remove or reassign the products first.',
-                    null,
-                    403 
-                );
+                return ApiResponse::error(__('messages.cannot_delete_category_fk'), null, 403);
             }
 
-            return ApiResponse::error('Failed to delete category', $e->getMessage(), 500);
+            return ApiResponse::error(__('messages.failed_to_delete_category'), $e->getMessage(), 500);
         }
     }
 }

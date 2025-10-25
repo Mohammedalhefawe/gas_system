@@ -15,41 +15,36 @@ class ProductReviewController extends Controller
     {
         try {
             $reviews = ProductReview::with('customer.user', 'product')->get();
-            return ApiResponse::success('Reviews retrieved successfully', ['reviews' => $reviews]);
+            return ApiResponse::success(__('messages.reviews_retrieved'), ['reviews' => $reviews]);
         } catch (Exception $e) {
-            return ApiResponse::error('Failed to retrieve reviews', $e->getMessage(), 500);
+            return ApiResponse::error(__('messages.failed_to_retrieve_reviews'), $e->getMessage(), 500);
         }
     }
 
     public function getReviewsByProduct($product_id)
-{
-    try {
-        $reviews = ProductReview::with('customer.user')
-            ->where('product_id', $product_id)
-            ->get();
+    {
+        try {
+            $reviews = ProductReview::with('customer.user')
+                ->where('product_id', $product_id)
+                ->get();
 
-        // if ($reviews->isEmpty()) {
-        //     return ApiResponse::error('No reviews found for this product', null, 404);
-        // }
-
-        return ApiResponse::success('Product reviews retrieved successfully', ['reviews' => $reviews]);
-    } catch (Exception $e) {
-        return ApiResponse::error('Failed to retrieve product reviews', $e->getMessage(), 500);
+            return ApiResponse::success(__('messages.product_reviews_retrieved'), ['reviews' => $reviews]);
+        } catch (Exception $e) {
+            return ApiResponse::error(__('messages.failed_to_retrieve_product_reviews'), $e->getMessage(), 500);
+        }
     }
-}
-
 
     public function store(Request $request)
     {
         try {
             $user = JWTAuth::parseToken()->authenticate();
             if (!$user) {
-                return ApiResponse::error('Unauthenticated', null, 401);
+                return ApiResponse::error(__('messages.unauthenticated'), null, 401);
             }
 
             $customer = $user->customer;
             if (!$customer) {
-                return ApiResponse::error('Customer record not found', null, 404);
+                return ApiResponse::error(__('messages.customer_not_found'), null, 404);
             }
 
             $validator = Validator::make($request->all(), [
@@ -59,19 +54,19 @@ class ProductReviewController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return ApiResponse::error('Validation failed', $validator->errors(), 422);
+                return ApiResponse::error(__('messages.validation_failed'), $validator->errors(), 422);
             }
 
             $review = ProductReview::create([
                 'product_id' => $request->product_id,
-                'customer_id' => $customer->customer_id, // بدل user_id
+                'customer_id' => $customer->customer_id,
                 'rating' => $request->rating,
                 'review' => $request->review,
             ]);
 
-            return ApiResponse::success('Review created successfully', ['review' => $review], 201);
+            return ApiResponse::success(__('messages.review_created'), ['review' => $review], 201);
         } catch (Exception $e) {
-            return ApiResponse::error('Failed to create review', $e->getMessage(), 500);
+            return ApiResponse::error(__('messages.failed_to_create_review'), $e->getMessage(), 500);
         }
     }
 
@@ -80,11 +75,11 @@ class ProductReviewController extends Controller
         try {
             $review = ProductReview::find($id);
             if (!$review) {
-                return ApiResponse::error('Review not found', null, 404);
+                return ApiResponse::error(__('messages.review_not_found'), null, 404);
             }
-            return ApiResponse::success('Review retrieved successfully', ['review' => $review]);
+            return ApiResponse::success(__('messages.review_retrieved'), ['review' => $review]);
         } catch (Exception $e) {
-            return ApiResponse::error('Failed to retrieve review', $e->getMessage(), 500);
+            return ApiResponse::error(__('messages.failed_to_retrieve_review'), $e->getMessage(), 500);
         }
     }
 
@@ -93,21 +88,21 @@ class ProductReviewController extends Controller
         try {
             $user = JWTAuth::parseToken()->authenticate();
             if (!$user) {
-                return ApiResponse::error('Unauthenticated', null, 401);
+                return ApiResponse::error(__('messages.unauthenticated'), null, 401);
             }
 
             $customer = $user->customer;
             if (!$customer) {
-                return ApiResponse::error('Customer record not found', null, 404);
+                return ApiResponse::error(__('messages.customer_not_found'), null, 404);
             }
 
             $review = ProductReview::find($id);
             if (!$review) {
-                return ApiResponse::error('Review not found', null, 404);
+                return ApiResponse::error(__('messages.review_not_found'), null, 404);
             }
 
             if ($review->customer_id !== $customer->customer_id) {
-                return ApiResponse::error('Unauthorized', null, 403);
+                return ApiResponse::error(__('messages.unauthorized'), null, 403);
             }
 
             $validator = Validator::make($request->all(), [
@@ -116,14 +111,14 @@ class ProductReviewController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return ApiResponse::error('Validation failed', $validator->errors(), 422);
+                return ApiResponse::error(__('messages.validation_failed'), $validator->errors(), 422);
             }
 
             $review->update($request->only(['rating', 'review']));
 
-            return ApiResponse::success('Review updated successfully', ['review' => $review]);
+            return ApiResponse::success(__('messages.review_updated'), ['review' => $review]);
         } catch (Exception $e) {
-            return ApiResponse::error('Failed to update review', $e->getMessage(), 500);
+            return ApiResponse::error(__('messages.failed_to_update_review'), $e->getMessage(), 500);
         }
     }
 
@@ -132,27 +127,27 @@ class ProductReviewController extends Controller
         try {
             $user = JWTAuth::parseToken()->authenticate();
             if (!$user) {
-                return ApiResponse::error('Unauthenticated', null, 401);
+                return ApiResponse::error(__('messages.unauthenticated'), null, 401);
             }
 
             $customer = $user->customer;
             if (!$customer) {
-                return ApiResponse::error('Customer record not found', null, 404);
+                return ApiResponse::error(__('messages.customer_not_found'), null, 404);
             }
 
             $review = ProductReview::find($id);
             if (!$review) {
-                return ApiResponse::error('Review not found', null, 404);
+                return ApiResponse::error(__('messages.review_not_found'), null, 404);
             }
 
             if ($review->customer_id !== $customer->customer_id) {
-                return ApiResponse::error('Unauthorized', null, 403);
+                return ApiResponse::error(__('messages.unauthorized'), null, 403);
             }
 
             $review->delete();
-            return ApiResponse::success('Review deleted successfully');
+            return ApiResponse::success(__('messages.review_deleted'));
         } catch (Exception $e) {
-            return ApiResponse::error('Failed to delete review', $e->getMessage(), 500);
+            return ApiResponse::error(__('messages.failed_to_delete_review'), $e->getMessage(), 500);
         }
     }
 }

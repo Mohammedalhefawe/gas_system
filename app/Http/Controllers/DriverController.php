@@ -10,9 +10,7 @@ use App\Models\Driver;
 
 class DriverController extends Controller
 {
-    /**
-     * Accept order (sets status accepted)
-     */
+    // قبول طلب
     public function acceptOrder($order_id)
     {
         try {
@@ -20,25 +18,19 @@ class DriverController extends Controller
             $driver = $user->driver;
 
             if (!$driver) {
-                return ApiResponse::error('Driver profile not found', null, 404);
+                return ApiResponse::error(__('messages.driver_not_found'), null, 404);
             }
 
-            // ✅ منع السائق المحظور من قبول الطلبات
             if ($driver->blocked) {
-                return ApiResponse::error('Your account is blocked, you cannot accept new orders', null, 403);
+                return ApiResponse::error(__('messages.driver_blocked'), null, 403);
             }
 
-            // منع قبول طلب جديد إذا عنده طلب قيد التنفيذ
             $existingOrder = Order::where('driver_id', $driver->driver_id)
                 ->whereIn('order_status', ['accepted', 'on_the_way'])
                 ->first();
 
             if ($existingOrder) {
-                return ApiResponse::error(
-                    'You already have an ongoing order. Complete it first.',
-                    null,
-                    400
-                );
+                return ApiResponse::error(__('messages.driver_has_ongoing_order'), null, 400);
             }
 
             $order = Order::where('order_id', $order_id)
@@ -46,7 +38,7 @@ class DriverController extends Controller
                 ->first();
 
             if (!$order) {
-                return ApiResponse::error('Order not available for acceptance', null, 404);
+                return ApiResponse::error(__('messages.order_not_available'), null, 404);
             }
 
             $order->update([
@@ -54,16 +46,13 @@ class DriverController extends Controller
                 'order_status' => 'accepted',
             ]);
 
-            return ApiResponse::success('Order accepted, waiting for user confirmation', ['order' => $order]);
+            return ApiResponse::success(__('messages.order_accepted'), ['order' => $order]);
         } catch (\Exception $e) {
-            return ApiResponse::error('Failed to accept order', $e->getMessage(), 500);
+            return ApiResponse::error(__('messages.failed_accept_order'), $e->getMessage(), 500);
         }
     }
 
-
-    /**
-     * Reject order
-     */
+    // رفض طلب
     public function rejectOrder($order_id)
     {
         try {
@@ -71,7 +60,7 @@ class DriverController extends Controller
             $driver = $user->driver;
 
             if (!$driver) {
-                return ApiResponse::error('Driver profile not found', null, 404);
+                return ApiResponse::error(__('messages.driver_not_found'), null, 404);
             }
 
             $order = Order::where('order_id', $order_id)
@@ -79,7 +68,7 @@ class DriverController extends Controller
                 ->first();
 
             if (!$order) {
-                return ApiResponse::error('Order not available for rejection', null, 404);
+                return ApiResponse::error(__('messages.order_not_available'), null, 404);
             }
 
             $order->update([
@@ -87,15 +76,13 @@ class DriverController extends Controller
                 'order_status' => 'rejected',
             ]);
 
-            return ApiResponse::success('Order rejected by driver', ['order' => $order]);
+            return ApiResponse::success(__('messages.order_rejected'), ['order' => $order]);
         } catch (\Exception $e) {
-            return ApiResponse::error('Failed to reject order', $e->getMessage(), 500);
+            return ApiResponse::error(__('messages.failed_reject_order'), $e->getMessage(), 500);
         }
     }
 
-    /**
-     * Start delivery
-     */
+    // بدء التوصيل
     public function startDelivery($order_id)
     {
         try {
@@ -103,7 +90,7 @@ class DriverController extends Controller
             $driver = $user->driver;
 
             if (!$driver) {
-                return ApiResponse::error('Driver profile not found', null, 404);
+                return ApiResponse::error(__('messages.driver_not_found'), null, 404);
             }
 
             $order = Order::where('order_id', $order_id)
@@ -112,19 +99,17 @@ class DriverController extends Controller
                 ->first();
 
             if (!$order) {
-                return ApiResponse::error('Order not ready for delivery', null, 404);
+                return ApiResponse::error(__('messages.order_not_ready_delivery'), null, 404);
             }
 
             $order->update(['order_status' => 'on_the_way']);
-            return ApiResponse::success('Order is now on the way', ['order' => $order]);
+            return ApiResponse::success(__('messages.order_on_the_way'), ['order' => $order]);
         } catch (\Exception $e) {
-            return ApiResponse::error('Failed to start delivery', $e->getMessage(), 500);
+            return ApiResponse::error(__('messages.failed_start_delivery'), $e->getMessage(), 500);
         }
     }
 
-    /**
-     * Complete order
-     */
+    // إكمال الطلب
     public function completeOrder($order_id)
     {
         try {
@@ -132,7 +117,7 @@ class DriverController extends Controller
             $driver = $user->driver;
 
             if (!$driver) {
-                return ApiResponse::error('Driver profile not found', null, 404);
+                return ApiResponse::error(__('messages.driver_not_found'), null, 404);
             }
 
             $order = Order::where('order_id', $order_id)
@@ -141,20 +126,17 @@ class DriverController extends Controller
                 ->first();
 
             if (!$order) {
-                return ApiResponse::error('Order not ready to complete', null, 404);
+                return ApiResponse::error(__('messages.order_not_ready_complete'), null, 404);
             }
 
-            $order->update(['order_status' => 'completed', "payment_status" => "paid"]);
-            return ApiResponse::success('Order marked as completed', ['order' => $order]);
+            $order->update(['order_status' => 'completed', 'payment_status' => 'paid']);
+            return ApiResponse::success(__('messages.order_completed'), ['order' => $order]);
         } catch (\Exception $e) {
-            return ApiResponse::error('Failed to complete order', $e->getMessage(), 500);
+            return ApiResponse::error(__('messages.failed_complete_order'), $e->getMessage(), 500);
         }
     }
 
-    /**
-     * Get orders for this driver
-     */
-
+    // طلبات السائق
     public function myOrders()
     {
         try {
@@ -162,21 +144,21 @@ class DriverController extends Controller
             $driver = $user->driver;
 
             if (!$driver) {
-                return ApiResponse::error('Driver profile not found', null, 404);
+                return ApiResponse::error(__('messages.driver_not_found'), null, 404);
             }
-
 
             $orders = Order::with('items.product', 'address', 'customer.user')
                 ->where('driver_id', $driver->driver_id)
                 ->orderBy('order_date', 'desc')
                 ->get();
 
-            return ApiResponse::success('Driver orders retrieved successfully', ['orders' => $orders]);
+            return ApiResponse::success(__('messages.driver_orders_retrieved'), ['orders' => $orders]);
         } catch (\Exception $e) {
-            return ApiResponse::error('Failed to retrieve orders', $e->getMessage(), 500);
+            return ApiResponse::error(__('messages.failed_retrieve_driver_orders'), $e->getMessage(), 500);
         }
     }
 
+    // طلبات السائق للمسؤول
     public function getOrdersByDriverForAdmin($driver_id)
     {
         try {
@@ -185,36 +167,34 @@ class DriverController extends Controller
                 ->orderBy('order_date', 'desc')
                 ->get();
 
-            // if ($orders->isEmpty()) {
-            //     return ApiResponse::error('No orders found for this driver', null, 404);
-            // }
-
-            return ApiResponse::success('Driver orders retrieved successfully', [
+            return ApiResponse::success(__('messages.driver_orders_retrieved'), [
                 'driver_id' => $driver_id,
                 'orders' => $orders
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::error('Failed to retrieve driver orders', $e->getMessage(), 500);
+            return ApiResponse::error(__('messages.failed_retrieve_driver_orders'), $e->getMessage(), 500);
         }
     }
 
+    // حظر/رفع الحظر عن السائق
     public function toggleBlockDriver($driver_id)
     {
         $driver = Driver::find($driver_id);
 
         if (!$driver) {
-            return ApiResponse::error('Driver not found', null, 404);
+            return ApiResponse::error(__('messages.driver_not_found'), null, 404);
         }
 
         $driver->blocked = !$driver->blocked;
         $driver->save();
 
         return ApiResponse::success(
-            $driver->blocked ? 'Driver has been blocked' : 'Driver has been unblocked',
+            $driver->blocked ? __('messages.driver_blocked') : __('messages.driver_unblocked'),
             ['driver' => $driver]
         );
     }
 
+    // عرض كل السائقين
     public function getAllDrivers()
     {
         try {
@@ -222,18 +202,15 @@ class DriverController extends Controller
                 ->orderBy('driver_id', 'desc')
                 ->get();
 
-            // if ($drivers->isEmpty()) {
-            //     return ApiResponse::error('No drivers found', null, 404);
-            // }
-
-            return ApiResponse::success('Drivers retrieved successfully', [
+            return ApiResponse::success(__('messages.drivers_retrieved'), [
                 'drivers' => $drivers
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::error('Failed to retrieve drivers', $e->getMessage(), 500);
+            return ApiResponse::error(__('messages.failed_retrieve_drivers'), $e->getMessage(), 500);
         }
     }
 }
+
 
 
 /*

@@ -19,13 +19,13 @@ class UserAddressController extends Controller
             $customer = $user->customer;
 
             if (!$customer) {
-                return ApiResponse::error('Customer record not found', null, 404);
+                return ApiResponse::error(__('messages.customer_not_found'), null, 404);
             }
 
             $addresses = UserAddress::where('customer_id', $customer->customer_id)->get();
-            return ApiResponse::success('Addresses retrieved successfully', ['addresses' => $addresses]);
+            return ApiResponse::success(__('messages.addresses_retrieved'), ['addresses' => $addresses]);
         } catch (Exception $e) {
-            return ApiResponse::error('Failed to retrieve addresses', $e->getMessage(), 500);
+            return ApiResponse::error(__('messages.failed_to_retrieve_addresses'), $e->getMessage(), 500);
         }
     }
 
@@ -37,17 +37,17 @@ class UserAddressController extends Controller
             $customer = $user->customer;
 
             if (!$customer) {
-                return ApiResponse::error('Customer record not found', null, 404);
+                return ApiResponse::error(__('messages.customer_not_found'), null, 404);
             }
 
             $address = UserAddress::where('customer_id', $customer->customer_id)->find($id);
             if (!$address) {
-                return ApiResponse::error('Address not found', null, 404);
+                return ApiResponse::error(__('messages.address_not_found'), null, 404);
             }
 
-            return ApiResponse::success('Address retrieved successfully', ['address' => $address]);
+            return ApiResponse::success(__('messages.address_retrieved'), ['address' => $address]);
         } catch (Exception $e) {
-            return ApiResponse::error('Failed to retrieve address', $e->getMessage(), 500);
+            return ApiResponse::error(__('messages.failed_to_retrieve_address'), $e->getMessage(), 500);
         }
     }
 
@@ -59,7 +59,7 @@ class UserAddressController extends Controller
             $customer = $user->customer;
 
             if (!$customer) {
-                return ApiResponse::error('Customer record not found', null, 404);
+                return ApiResponse::error(__('messages.customer_not_found'), null, 404);
             }
 
             $validator = Validator::make($request->all(), [
@@ -73,7 +73,7 @@ class UserAddressController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return ApiResponse::error('Validation failed', $validator->errors(), 422);
+                return ApiResponse::error(__('messages.validation_failed'), $validator->errors(), 422);
             }
 
             $address = UserAddress::create([
@@ -87,9 +87,9 @@ class UserAddressController extends Controller
                 'details' => $request->details,
             ]);
 
-            return ApiResponse::success('Address created successfully', ['address' => $address], 201);
+            return ApiResponse::success(__('messages.address_created'), ['address' => $address], 201);
         } catch (Exception $e) {
-            return ApiResponse::error('Failed to create address', $e->getMessage(), 500);
+            return ApiResponse::error(__('messages.failed_to_create_address'), $e->getMessage(), 500);
         }
     }
 
@@ -101,12 +101,12 @@ class UserAddressController extends Controller
             $customer = $user->customer;
 
             if (!$customer) {
-                return ApiResponse::error('Customer record not found', null, 404);
+                return ApiResponse::error(__('messages.customer_not_found'), null, 404);
             }
 
             $address = UserAddress::where('customer_id', $customer->customer_id)->find($id);
             if (!$address) {
-                return ApiResponse::error('Address not found', null, 404);
+                return ApiResponse::error(__('messages.address_not_found'), null, 404);
             }
 
             $validator = Validator::make($request->all(), [
@@ -120,14 +120,14 @@ class UserAddressController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return ApiResponse::error('Validation failed', $validator->errors(), 422);
+                return ApiResponse::error(__('messages.validation_failed'), $validator->errors(), 422);
             }
 
             $address->update($request->only(['address', 'city', 'latitude', 'longitude', 'floor_number', 'address_name', 'details']));
 
-            return ApiResponse::success('Address updated successfully', ['address' => $address]);
+            return ApiResponse::success(__('messages.address_updated'), ['address' => $address]);
         } catch (Exception $e) {
-            return ApiResponse::error('Failed to update address', $e->getMessage(), 500);
+            return ApiResponse::error(__('messages.failed_to_update_address'), $e->getMessage(), 500);
         }
     }
 
@@ -139,18 +139,18 @@ class UserAddressController extends Controller
             $customer = $user->customer;
 
             if (!$customer) {
-                return ApiResponse::error('Customer record not found', null, 404);
+                return ApiResponse::error(__('messages.customer_not_found'), null, 404);
             }
 
             $address = UserAddress::where('customer_id', $customer->customer_id)->find($id);
             if (!$address) {
-                return ApiResponse::error('Address not found', null, 404);
+                return ApiResponse::error(__('messages.address_not_found'), null, 404);
             }
 
             $address->delete();
-            return ApiResponse::success('Address deleted successfully');
+            return ApiResponse::success(__('messages.address_deleted'));
         } catch (Exception $e) {
-            return ApiResponse::error('Failed to delete address', $e->getMessage(), 500);
+            return ApiResponse::error(__('messages.failed_to_delete_address'), $e->getMessage(), 500);
         }
     }
 }

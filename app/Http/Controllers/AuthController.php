@@ -14,9 +14,6 @@ use App\Http\Responses\ApiResponse;
 
 class AuthController extends Controller
 {
-    /**
-     * Register Customer
-     */
     public function registerCustomer(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -26,16 +23,14 @@ class AuthController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return ApiResponse::error('Validation failed', $validator->errors(), 422);
+            return ApiResponse::error(__('messages.validation_failed'), $validator->errors(), 422);
         }
 
-        // تحقق إذا في User بنفس الرقم
         $existingUser = User::where('phone_number', $request->phone_number)->first();
         if ($existingUser && $existingUser->is_verified) {
-            return ApiResponse::error('Phone number already registered and verified', null, 409);
+            return ApiResponse::error(__('messages.phone_already_registered'), null, 409);
         }
 
-        // إذا موجود بس مو مفعّل → منحدّث بياناته
         if ($existingUser && !$existingUser->is_verified) {
             $user = $existingUser;
             $user->update([
@@ -54,12 +49,11 @@ class AuthController extends Controller
                 ]);
             }
         } else {
-            // إنشاء جديد
             $user = User::create([
                 'phone_number' => $request->phone_number,
                 'password' => Hash::make($request->password),
                 'is_verified' => false,
-                'role_id' => 2, // 2 = Customer
+                'role_id' => 2,
                 'created_at' => now(),
             ]);
 
@@ -69,16 +63,13 @@ class AuthController extends Controller
             ]);
         }
 
-        // توليد PIN وحفظه
         $pin = 111111;
-        // $pin = rand(100000, 999999);
         $user->update([
             'verification_pin' => $pin,
             'pin_expires_at' => now()->addMinutes(10),
         ]);
 
         $phone = $user->phone_number;
-
         if (!str_starts_with($phone, '+963')) {
             $phone = '+963' . ltrim($phone, '0');
         }
@@ -87,23 +78,19 @@ class AuthController extends Controller
             'Authorization' => env('SMS_API_KEY'),
         ])->post(env('SMS_API_URL'), [
             'to' => $phone,
-            'message' => "Your verification PIN is $pin",
+            'message' => __("messages.pin_message", ['pin' => $pin]),
         ]);
 
         if ($response->failed()) {
-            return ApiResponse::error('Failed to send SMS', $response->body(), 500);
+            return ApiResponse::error(__('messages.failed_to_send_sms'), $response->body(), 500);
         }
 
-        return ApiResponse::success('Customer registered successfully, PIN sent for verification', [
+        return ApiResponse::success(__('messages.customer_registered'), [
             'user_id' => $user->user_id,
             'phone_number' => $user->phone_number,
         ], 201);
     }
 
-
-    /**
-     * Forgot Password - Send reset PIN
-     */
     public function forgotPassword(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -111,49 +98,42 @@ class AuthController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return ApiResponse::error('Validation failed', $validator->errors(), 422);
+            return ApiResponse::error(__('messages.validation_failed'), $validator->errors(), 422);
         }
 
         $user = User::where('phone_number', $request->phone_number)->first();
 
         if (!$user) {
-            return ApiResponse::error('User not found', null, 404);
+            return ApiResponse::error(__('messages.user_not_found'), null, 404);
         }
 
-        // توليد PIN جديد
-        // $pin = rand(100000, 999999);
         $pin = 111111;
         $user->update([
             'verification_pin' => $pin,
             'pin_expires_at' => now()->addMinutes(10),
         ]);
 
-        // تجهيز الرقم
         $phone = $user->phone_number;
         if (!str_starts_with($phone, '+963')) {
             $phone = '+963' . ltrim($phone, '0');
         }
 
-        // إرسال SMS
         $response = Http::withHeaders([
             'Authorization' => env('SMS_API_KEY'),
         ])->post(env('SMS_API_URL'), [
             'to' => $phone,
-            'message' => "Your password reset PIN is $pin",
+            'message' => __("messages.reset_pin_message", ['pin' => $pin]),
         ]);
 
         if ($response->failed()) {
-            return ApiResponse::error('Failed to send SMS', $response->body(), 500);
+            return ApiResponse::error(__('messages.failed_to_send_sms'), $response->body(), 500);
         }
 
-        return ApiResponse::success('Reset PIN sent successfully', [
+        return ApiResponse::success(__('messages.reset_pin_sent'), [
             'phone_number' => $user->phone_number,
         ]);
     }
 
-    /**
-     * Verify Reset PIN
-     */
     public function verifyResetPin(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -162,25 +142,22 @@ class AuthController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return ApiResponse::error('Validation failed', $validator->errors(), 422);
+            return ApiResponse::error(__('messages.validation_failed'), $validator->errors(), 422);
         }
 
         $user = User::where('phone_number', $request->phone_number)->first();
 
         if (!$user) {
-            return ApiResponse::error('User not found', null, 404);
+            return ApiResponse::error(__('messages.user_not_found'), null, 404);
         }
 
         if ($user->verification_pin != $request->pin || now()->gt($user->pin_expires_at)) {
-            return ApiResponse::error('Invalid or expired PIN', null, 400);
+            return ApiResponse::error(__('messages.invalid_or_expired_pin'), null, 400);
         }
 
-        return ApiResponse::success('PIN verified successfully');
+        return ApiResponse::success(__('messages.pin_verified'));
     }
 
-    /**
-     * Reset Password
-     */
     public function resetPassword(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -190,33 +167,28 @@ class AuthController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return ApiResponse::error('Validation failed', $validator->errors(), 422);
+            return ApiResponse::error(__('messages.validation_failed'), $validator->errors(), 422);
         }
 
         $user = User::where('phone_number', $request->phone_number)->first();
 
         if (!$user) {
-            return ApiResponse::error('User not found', null, 404);
+            return ApiResponse::error(__('messages.user_not_found'), null, 404);
         }
 
         if ($user->verification_pin != $request->pin || now()->gt($user->pin_expires_at)) {
-            return ApiResponse::error('Invalid or expired PIN', null, 400);
+            return ApiResponse::error(__('messages.invalid_or_expired_pin'), null, 400);
         }
 
-        // تحديث كلمة المرور
         $user->update([
             'password' => Hash::make($request->new_password),
             'verification_pin' => null,
             'pin_expires_at' => null,
         ]);
 
-        return ApiResponse::success('Password reset successfully');
+        return ApiResponse::success(__('messages.password_reset_success'));
     }
 
-
-    /**
-     * Verify Customer PIN
-     */
     public function verifyCustomer(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -225,20 +197,20 @@ class AuthController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return ApiResponse::error('Validation failed', $validator->errors(), 422);
+            return ApiResponse::error(__('messages.validation_failed'), $validator->errors(), 422);
         }
 
         $user = User::where('phone_number', $request->phone_number)->first();
         if (!$user) {
-            return ApiResponse::error('User not found', null, 404);
+            return ApiResponse::error(__('messages.user_not_found'), null, 404);
         }
 
         if ($user->is_verified) {
-            return ApiResponse::success('Account already verified');
+            return ApiResponse::success(__('messages.account_already_verified'));
         }
 
         if ($user->verification_pin != $request->pin || now()->gt($user->pin_expires_at)) {
-            return ApiResponse::error('Invalid or expired PIN', null, 400);
+            return ApiResponse::error(__('messages.invalid_or_expired_pin'), null, 400);
         }
 
         $user->update([
@@ -249,10 +221,9 @@ class AuthController extends Controller
 
         $token = JWTAuth::fromUser($user);
         $user->load('role');
-
         $customer = $user->customer;
 
-        return ApiResponse::success('Account verified successfully', [
+        return ApiResponse::success(__('messages.account_verified'), [
             'user' => [
                 'user_id' => $user->user_id,
                 'phone_number' => $user->phone_number,
@@ -268,10 +239,6 @@ class AuthController extends Controller
         ]);
     }
 
-
-    /**
-     * Resend Customer Verification PIN
-     */
     public function resendCustomerPin(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -279,54 +246,47 @@ class AuthController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return ApiResponse::error('Validation failed', $validator->errors(), 422);
+            return ApiResponse::error(__('messages.validation_failed'), $validator->errors(), 422);
         }
 
         $user = User::where('phone_number', $request->phone_number)->first();
 
         if (!$user) {
-            return ApiResponse::error('User not found', null, 404);
+            return ApiResponse::error(__('messages.user_not_found'), null, 404);
         }
 
         if ($user->is_verified) {
-            return ApiResponse::success('Account already verified');
+            return ApiResponse::success(__('messages.account_already_verified'));
         }
 
-        // توليد PIN جديد
         $pin = rand(100000, 999999);
         $user->update([
             'verification_pin' => $pin,
             'pin_expires_at' => now()->addMinutes(10),
         ]);
 
-        // معالجة الرقم مع البادئة
         $phone = $user->phone_number;
         if (!str_starts_with($phone, '+963')) {
             $phone = '+963' . ltrim($phone, '0');
         }
 
-        // إرسال عبر Traccar SMS API
         $response = Http::withHeaders([
             'Authorization' => env('SMS_API_KEY'),
         ])->post(env('SMS_API_URL'), [
             'to' => $phone,
-            'message' => "Your new verification PIN is $pin",
+            'message' => __("messages.pin_message", ['pin' => $pin]),
         ]);
 
         if ($response->failed()) {
-            return ApiResponse::error('Failed to send SMS', $response->body(), 500);
+            return ApiResponse::error(__('messages.failed_to_send_sms'), $response->body(), 500);
         }
 
-        return ApiResponse::success('New PIN sent successfully', [
+        return ApiResponse::success(__('messages.new_pin_sent'), [
             'user_id' => $user->user_id,
             'phone_number' => $user->phone_number,
         ]);
     }
 
-
-    /**
-     * Register Driver (no verify needed)
-     */
     public function registerDriver(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -338,14 +298,14 @@ class AuthController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return ApiResponse::error('Validation failed', $validator->errors(), 422);
+            return ApiResponse::error(__('messages.validation_failed'), $validator->errors(), 422);
         }
 
         $user = User::create([
             'full_name' => $request->full_name,
             'phone_number' => $request->phone_number,
             'password' => Hash::make($request->password),
-            'is_verified' => true, // Drivers not need verification
+            'is_verified' => true,
             'role_id' => 3,
             'created_at' => now(),
         ]);
@@ -362,7 +322,7 @@ class AuthController extends Controller
         $token = JWTAuth::fromUser($user);
         $user->load('role');
 
-        return ApiResponse::success('Driver registered successfully', [
+        return ApiResponse::success(__('messages.driver_registered'), [
             'user' => [
                 'user_id' => $user->user_id,
                 'phone_number' => $user->phone_number,
@@ -381,9 +341,6 @@ class AuthController extends Controller
         ], 201);
     }
 
-    /**
-     * Login (all roles)
-     */
     public function login(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -392,19 +349,19 @@ class AuthController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return ApiResponse::error('Validation failed', $validator->errors(), 422);
+            return ApiResponse::error(__('messages.validation_failed'), $validator->errors(), 422);
         }
 
         $credentials = $request->only('phone_number', 'password');
 
         if (!$token = JWTAuth::attempt($credentials)) {
-            return ApiResponse::error('Invalid credentials', null, 401);
+            return ApiResponse::error(__('messages.invalid_credentials'), null, 401);
         }
 
         $user = JWTAuth::user()->load('role');
 
         if ($user->role_id == 2 && !$user->is_verified) {
-            return ApiResponse::error('Account not verified, please enter PIN', null, 403);
+            return ApiResponse::error(__('messages.account_not_verified'), null, 403);
         }
 
         $role_info = null;
@@ -423,7 +380,7 @@ class AuthController extends Controller
             ];
         }
 
-        return ApiResponse::success('Login successful', [
+        return ApiResponse::success(__('messages.login_successful'), [
             'user' => [
                 'user_id' => $user->user_id,
                 'phone_number' => $user->phone_number,
@@ -436,29 +393,23 @@ class AuthController extends Controller
         ]);
     }
 
-    /**
-     * Logout
-     */
     public function logout()
     {
         try {
             JWTAuth::invalidate(JWTAuth::getToken());
-            return ApiResponse::success('Successfully logged out');
+            return ApiResponse::success(__('messages.logout_success'));
         } catch (\Exception $e) {
-            return ApiResponse::error('Failed to logout, please try again', null, 500);
+            return ApiResponse::error(__('messages.logout_failed'), null, 500);
         }
     }
 
-    /**
-     * Authenticated user
-     */
     public function me()
     {
         try {
             $user = JWTAuth::parseToken()->authenticate()->load('role');
 
             if ($user->role_id == 2 && !$user->is_verified) {
-                return ApiResponse::error('Account not verified, please enter PIN', null, 403);
+                return ApiResponse::error(__('messages.account_not_verified'), null, 403);
             }
 
             $role_info = null;
@@ -477,7 +428,7 @@ class AuthController extends Controller
                 ];
             }
 
-            return ApiResponse::success('Authenticated user', [
+            return ApiResponse::success(__('messages.auth_user'), [
                 'user' => [
                     'user_id' => $user->user_id,
                     'phone_number' => $user->phone_number,
@@ -488,39 +439,36 @@ class AuthController extends Controller
                 ],
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::error('Token is invalid or expired', null, 401);
+            return ApiResponse::error(__('messages.token_invalid'), null, 401);
         }
     }
-
 
     public function getAllCustomers()
     {
         try {
             $customers = Customer::with('user')->get();
 
-            return ApiResponse::success('Customers retrieved successfully', [
+            return ApiResponse::success(__('messages.customers_retrieved'), [
                 'customers' => $customers
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::error('Failed to retrieve customers', $e->getMessage(), 500);
+            return ApiResponse::error(__('messages.failed_to_retrieve_customers'), $e->getMessage(), 500);
         }
     }
 
-    // Toggle block/unblock customer
     public function toggleBlockCustomer($customer_id)
     {
         $customer = Customer::find($customer_id);
 
         if (!$customer) {
-            return ApiResponse::error('Customer not found', null, 404);
+            return ApiResponse::error(__('messages.customer_not_found'), null, 404);
         }
 
-        // Toggle the blocked status
         $customer->blocked = !$customer->blocked;
         $customer->save();
 
         return ApiResponse::success(
-            $customer->blocked ? 'Customer has been blocked' : 'Customer has been unblocked',
+            $customer->blocked ? __('messages.customer_blocked') : __('messages.customer_unblocked'),
             ['customer' => $customer]
         );
     }

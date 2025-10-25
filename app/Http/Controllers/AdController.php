@@ -16,7 +16,7 @@ class AdController extends Controller
         $user = JWTAuth::parseToken()->authenticate();
 
         if ($user->role_id != 1) { // 1 = Admin
-            return ApiResponse::error('Unauthorized', null, 403);
+            return ApiResponse::error(__('messages.unauthorized'), null, 403);
         }
 
         $request->validate([
@@ -39,7 +39,7 @@ class AdController extends Controller
             'user_id' => $user->user_id,
         ]);
 
-        return ApiResponse::success('Ad created successfully', $ad);
+        return ApiResponse::success(__('messages.ad_created'), $ad);
     }
 
     // تحديث إعلان
@@ -49,11 +49,11 @@ class AdController extends Controller
         $ad = Ad::find($id);
 
         if (!$ad) {
-            return ApiResponse::error('Ad not found', null, 404);
+            return ApiResponse::error(__('messages.ad_not_found'), null, 404);
         }
 
         if ($user->role_id != 1 && $ad->user_id != $user->user_id) {
-            return ApiResponse::error('Unauthorized', null, 403);
+            return ApiResponse::error(__('messages.unauthorized'), null, 403);
         }
 
         $request->validate([
@@ -74,7 +74,7 @@ class AdController extends Controller
 
         $ad->update($request->only(['title', 'description', 'image', 'link']));
 
-        return ApiResponse::success('Ad updated successfully', $ad);
+        return ApiResponse::success(__('messages.ad_updated'), $ad);
     }
 
     // حذف إعلان
@@ -84,11 +84,11 @@ class AdController extends Controller
         $ad = Ad::find($id);
 
         if (!$ad) {
-            return ApiResponse::error('Ad not found', null, 404);
+            return ApiResponse::error(__('messages.ad_not_found'), null, 404);
         }
 
         if ($user->role_id != 1 && $ad->user_id != $user->user_id) {
-            return ApiResponse::error('Unauthorized', null, 403);
+            return ApiResponse::error(__('messages.unauthorized'), null, 403);
         }
 
         // حذف الصورة إذا موجودة
@@ -98,13 +98,13 @@ class AdController extends Controller
 
         $ad->delete();
 
-        return ApiResponse::success('Ad deleted successfully');
+        return ApiResponse::success(__('messages.ad_deleted'));
     }
 
     // عرض جميع الإعلانات بدون بيانات المستخدم وبدون prefix URL
     public function index()
     {
-        $ads = Ad::all()->map(function($ad) {
+        $ads = Ad::all()->map(function ($ad) {
             return [
                 'id' => $ad->id,
                 'title' => $ad->title,
@@ -117,7 +117,7 @@ class AdController extends Controller
             ];
         });
 
-        return ApiResponse::success('Ads list', ['ads' => $ads]);
+        return ApiResponse::success(__('messages.ads_list'), ['ads' => $ads]);
     }
 
     // عرض إعلان محدد بدون بيانات المستخدم وبدون prefix URL
@@ -126,10 +126,10 @@ class AdController extends Controller
         $ad = Ad::find($id);
 
         if (!$ad) {
-            return ApiResponse::error('Ad not found', null, 404);
+            return ApiResponse::error(__('messages.ad_not_found'), null, 404);
         }
 
-        return ApiResponse::success('Ad details', [
+        return ApiResponse::success(__('messages.ad_details'), [
             'id' => $ad->id,
             'title' => $ad->title,
             'description' => $ad->description,
