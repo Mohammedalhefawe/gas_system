@@ -491,4 +491,37 @@ class AuthController extends Controller
             return ApiResponse::error('Token is invalid or expired', null, 401);
         }
     }
+
+
+    public function getAllCustomers()
+    {
+        try {
+            $customers = Customer::with('user')->get();
+
+            return ApiResponse::success('Customers retrieved successfully', [
+                'customers' => $customers
+            ]);
+        } catch (\Exception $e) {
+            return ApiResponse::error('Failed to retrieve customers', $e->getMessage(), 500);
+        }
+    }
+
+    // Toggle block/unblock customer
+    public function toggleBlockCustomer($customer_id)
+    {
+        $customer = Customer::find($customer_id);
+
+        if (!$customer) {
+            return ApiResponse::error('Customer not found', null, 404);
+        }
+
+        // Toggle the blocked status
+        $customer->blocked = !$customer->blocked;
+        $customer->save();
+
+        return ApiResponse::success(
+            $customer->blocked ? 'Customer has been blocked' : 'Customer has been unblocked',
+            ['customer' => $customer]
+        );
+    }
 }

@@ -21,6 +21,24 @@ class ProductReviewController extends Controller
         }
     }
 
+    public function getReviewsByProduct($product_id)
+{
+    try {
+        $reviews = ProductReview::with('customer.user')
+            ->where('product_id', $product_id)
+            ->get();
+
+        // if ($reviews->isEmpty()) {
+        //     return ApiResponse::error('No reviews found for this product', null, 404);
+        // }
+
+        return ApiResponse::success('Product reviews retrieved successfully', ['reviews' => $reviews]);
+    } catch (Exception $e) {
+        return ApiResponse::error('Failed to retrieve product reviews', $e->getMessage(), 500);
+    }
+}
+
+
     public function store(Request $request)
     {
         try {

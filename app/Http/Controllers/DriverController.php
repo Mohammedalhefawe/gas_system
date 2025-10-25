@@ -222,9 +222,9 @@ class DriverController extends Controller
                 ->orderBy('driver_id', 'desc')
                 ->get();
 
-            if ($drivers->isEmpty()) {
-                return ApiResponse::error('No drivers found', null, 404);
-            }
+            // if ($drivers->isEmpty()) {
+            //     return ApiResponse::error('No drivers found', null, 404);
+            // }
 
             return ApiResponse::success('Drivers retrieved successfully', [
                 'drivers' => $drivers

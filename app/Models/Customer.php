@@ -17,6 +17,7 @@ class Customer extends Model
     protected $fillable = [
         'user_id',
         'full_name',
+        'blocked',
     ];
 
     // Relations

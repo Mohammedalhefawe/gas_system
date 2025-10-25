@@ -24,6 +24,10 @@ class OrderController extends Controller
                 return ApiResponse::error('Customer record not found', null, 404);
             }
 
+            if ($customer->blocked) {
+                return ApiResponse::error('You are banned from placing new orders', null, 403);
+            }
+
             $request->validate([
                 'items' => 'required|array|min:1',
                 'items.*.product_id' => 'required|exists:products,product_id',
@@ -87,8 +91,8 @@ class OrderController extends Controller
             $customer = $user->customer;
 
             $order = Order::where('order_id', $order_id)
-                          ->where('customer_id', $customer->customer_id)
-                          ->first();
+                ->where('customer_id', $customer->customer_id)
+                ->first();
 
             if (!$order) {
                 return ApiResponse::error('Order not found', null, 404);
@@ -106,22 +110,42 @@ class OrderController extends Controller
     }
 
     // عرض طلبات العميل
-   public function myOrders()
-{
-    try {
-        $user = JWTAuth::parseToken()->authenticate();
-        $customer = $user->customer;
+    public function myOrders()
+    {
+        try {
+            $user = JWTAuth::parseToken()->authenticate();
+            $customer = $user->customer;
 
-        $orders = Order::with('items.product', 'address')
-                       ->where('customer_id', $customer->customer_id)
-                       ->orderBy('order_date', 'desc') 
-                       ->get();
+            $orders = Order::with('items.product', 'address')
+                ->where('customer_id', $customer->customer_id)
+                ->orderBy('order_date', 'desc')
+                ->get();
 
-        return ApiResponse::success('Orders retrieved successfully', ['orders' => $orders]);
-    } catch (Exception $e) {
-        return ApiResponse::error('Failed to retrieve orders', $e->getMessage(), 500);
+            return ApiResponse::success('Orders retrieved successfully', ['orders' => $orders]);
+        } catch (Exception $e) {
+            return ApiResponse::error('Failed to retrieve orders', $e->getMessage(), 500);
+        }
     }
-}
+
+
+    // عرض الطلبات حسب customer_id (للمسؤول)
+    public function getOrdersByCustomer($customer_id)
+    {
+        try {
+            $orders = Order::with('items.product', 'address', 'customer.user')
+                ->where('customer_id', $customer_id)
+                ->orderBy('order_date', 'desc')
+                ->get();
+
+            if ($orders->isEmpty()) {
+                return ApiResponse::error('No orders found for this customer', null, 404);
+            }
+
+            return ApiResponse::success('Orders retrieved successfully', ['orders' => $orders]);
+        } catch (Exception $e) {
+            return ApiResponse::error('Failed to retrieve orders', $e->getMessage(), 500);
+        }
+    }
 
 
     // إضافة تقييم و مراجعة للطلب بعد اكتماله
@@ -132,8 +156,8 @@ class OrderController extends Controller
             $customer = $user->customer;
 
             $order = Order::where('order_id', $order_id)
-                          ->where('customer_id', $customer->customer_id)
-                          ->first();
+                ->where('customer_id', $customer->customer_id)
+                ->first();
 
             if (!$order) {
                 return ApiResponse::error('Order not found', null, 404);
@@ -160,33 +184,33 @@ class OrderController extends Controller
     }
 
     // عرض كل الطلبات (للمسؤول أو المستخدم)
- public function index(Request $request)
-{
-    try {
-        $query = Order::with('items.product', 'address', 'customer.user');
+    public function index(Request $request)
+    {
+        try {
+            $query = Order::with('items.product', 'address', 'customer.user');
 
-        // ✅ فلترة اختيارية حسب الحالة
-        if ($request->has('status') && !empty($request->status)) {
-            $query->where('order_status', $request->status);
+            // ✅ فلترة اختيارية حسب الحالة
+            if ($request->has('status') && !empty($request->status)) {
+                $query->where('order_status', $request->status);
+            }
+
+            $orders = $query->orderBy('order_date', 'desc')->get();
+
+
+
+            return ApiResponse::success('Orders retrieved successfully', ['orders' => $orders]);
+        } catch (Exception $e) {
+            return ApiResponse::error('Failed to retrieve orders', $e->getMessage(), 500);
         }
-
-        $orders = $query->orderBy('order_date', 'desc')->get();
-
-         
-
-        return ApiResponse::success('Orders retrieved successfully', ['orders' => $orders]);
-    } catch (Exception $e) {
-        return ApiResponse::error('Failed to retrieve orders', $e->getMessage(), 500);
     }
-}
 
     // عرض طلب محدد
     public function show($order_id)
     {
         try {
             $order = Order::with('items.product', 'address', 'customer')
-                          ->where('order_id', $order_id)
-                          ->first();
+                ->where('order_id', $order_id)
+                ->first();
 
             if (!$order) {
                 return ApiResponse::error('Order not found', null, 404);
