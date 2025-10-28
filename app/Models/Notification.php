@@ -11,7 +11,7 @@ class Notification extends Model
 
     protected $table = 'notifications';
     protected $primaryKey = 'notification_id';
-    public $timestamps = false;
+    public $timestamps = true;
 
     protected $fillable = [
         'user_id',
@@ -22,6 +22,13 @@ class Notification extends Model
         'related_order_id',
         'sent_at',
         'action_url',
+        'data',
+    ];
+
+    protected $casts = [
+        'data' => 'array',
+        'is_read' => 'boolean',
+        'sent_at' => 'datetime',
     ];
 
     public function user()

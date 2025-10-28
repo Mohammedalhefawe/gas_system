@@ -11,7 +11,7 @@ class UserDevice extends Model
 
     protected $table = 'user_devices';
     protected $primaryKey = 'device_id';
-    public $timestamps = false;
+    public $timestamps = true; 
 
     protected $fillable = [
         'user_id',

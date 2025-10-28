@@ -10,11 +10,13 @@ return new class extends Migration
     {
         Schema::create('user_devices', function (Blueprint $table) {
             $table->id('device_id');
-            $table->foreignId('user_id')->constrained('users', 'user_id');
+            $table->unsignedBigInteger('user_id');
             $table->string('device_token');
-            $table->string('device_type');
+            $table->string('device_type'); // android or ios
             $table->string('app_version')->nullable();
-            $table->timestamp('last_active')->useCurrent();
+            $table->timestamp('last_active')->nullable();
+            $table->timestamps();
+            $table->foreign('user_id')->references('user_id')->on('users')->onDelete('cascade');
         });
     }
 

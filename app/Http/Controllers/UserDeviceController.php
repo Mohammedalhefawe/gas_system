@@ -4,62 +4,69 @@ namespace App\Http\Controllers;
 
 use App\Models\UserDevice;
 use Illuminate\Http\Request;
+use Tymon\JWTAuth\Facades\JWTAuth;
+use App\Http\Responses\ApiResponse;
 
 class UserDeviceController extends Controller
 {
     /**
-     * Display a listing of the resource.
-     */
-    public function index()
-    {
-        //
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
+     * Store or update a device token for a user.
      */
     public function store(Request $request)
     {
-        //
+        try {
+            $user = JWTAuth::parseToken()->authenticate();
+
+            $request->validate([
+                'token' => 'required|string', // FCM token
+                'device_id' => 'required|string',
+                'platform' => 'required|string|in:android,ios',
+                'app_version' => 'nullable|string',
+            ]);
+
+            $device = UserDevice::updateOrCreate(
+                [
+                    'user_id' => $user->user_id,
+                    'device_id' => $request->device_id,
+                ],
+                [
+                    'device_token' => $request->token,
+                    'device_type' => $request->platform,
+                    'app_version' => $request->app_version,
+                    'last_active' => now(),
+                ]
+            );
+
+            return ApiResponse::success(__('messages.device_token_stored'), ['device' => $device], 201);
+        } catch (\Exception $e) {
+            return ApiResponse::error(__('messages.failed_to_store_device_token'), $e->getMessage(), 500);
+        }
     }
 
     /**
-     * Display the specified resource.
+     * Remove a device token.
      */
-    public function show(UserDevice $userDevice)
+    public function destroy(Request $request)
     {
-        //
-    }
+        try {
+            $user = JWTAuth::parseToken()->authenticate();
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(UserDevice $userDevice)
-    {
-        //
-    }
+            $request->validate([
+                'token' => 'required|string',
+            ]);
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, UserDevice $userDevice)
-    {
-        //
-    }
+            $device = UserDevice::where('user_id', $user->user_id)
+                ->where('device_token', $request->token)
+                ->first();
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(UserDevice $userDevice)
-    {
-        //
+            if (!$device) {
+                return ApiResponse::error(__('messages.device_not_found'), null, 404);
+            }
+
+            $device->delete();
+            return ApiResponse::success(__('messages.device_token_removed'));
+        } catch (\Exception $e) {
+            return ApiResponse::error(__('messages.failed_to_remove_device_token'), $e->getMessage(), 500);
+        }
     }
 }

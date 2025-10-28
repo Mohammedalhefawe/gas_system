@@ -16,6 +16,26 @@ use App\Http\Middleware\EnsureUserIsCustomer;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\EnsureUserIsDriver;
 use App\Http\Middleware\SetLocale;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\UserDeviceController;
+
+use App\Services\FCMService;
+
+Route::get('/test-fcm', function () {
+    $fcm = new FCMService();
+
+    // حط هون token جهازك من Flutter
+    $testToken = 'cF6b3CQRQ--wbqhO5L46Sr:APA91bGdjXriZIIna9VVHoqx0kCHdVKGSfCP4BCfQReSHY0G9XvYaqq3yIZvYkU4RMRTbVICOgmr3Hj18Gdu75PRyrWoPLm1EbN4gOUOr2d70gXfMcJzctI';
+
+    $response = $fcm->sendNotification(
+        [$testToken],
+        'Test Notification',
+        'This is a test from Laravel FCM!'
+    );
+
+    return $response->json();
+});
+
 
 
 Route::middleware([SetLocale::class])->group(function () {
@@ -89,6 +109,15 @@ Route::middleware([SetLocale::class])->group(function () {
             Route::put('/{id}', [ProductReviewController::class, 'update']);
             Route::delete('/{id}', [ProductReviewController::class, 'destroy']);
         });
+    });
+
+
+    Route::middleware(['auth:api'])->group(function () {
+
+        Route::post('notifications/device-tokens', [UserDeviceController::class, 'store']);
+        Route::delete('notifications/device-tokens', [UserDeviceController::class, 'destroy']);
+        Route::get('notifications', [NotificationController::class, 'index']);
+        Route::post('notifications/{notification_id}/mark-read', [NotificationController::class, 'markAsRead']);
     });
 
 

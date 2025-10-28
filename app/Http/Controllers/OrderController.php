@@ -6,6 +6,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\DeliveryFee;
+use App\Http\Controllers\NotificationController;
 use Illuminate\Http\Request;
 use App\Http\Responses\ApiResponse;
 use Tymon\JWTAuth\Facades\JWTAuth;
@@ -13,7 +14,13 @@ use Exception;
 
 class OrderController extends Controller
 {
-    // إضافة طلب جديد
+    protected $notificationController;
+
+    public function __construct(NotificationController $notificationController)
+    {
+        $this->notificationController = $notificationController;
+    }
+
     public function store(Request $request)
     {
         try {
@@ -77,13 +84,43 @@ class OrderController extends Controller
                 ]);
             }
 
+            // Send notification to the customer
+            $this->notificationController->sendNotification(
+                [$user->user_id],
+                "Order Placed",
+                "You have placed an order #$order->order_id successfully",
+                [
+                    'order_id' => $order->order_id,
+                    'payload_route' => "/order/{$order->order_id}",
+                    'title_ar' => 'تم تقديم الطلب',
+                    'body_ar' => "تم تقديم طلبك رقم #{$order->order_id} بنجاح",
+                ],
+                'order_status',
+                $order->order_id,
+            );
+
+            // Send notification to all drivers (using topic 'drivers')
+            $this->notificationController->sendNotification(
+                [], // Empty user_ids for topic-based notification
+                'New Order',
+                "You have a new order #$order->order_id available for delivery",
+                [
+                    'order_id' => $order->order_id,
+                    'payload_route' => "/order/{$order->order_id}",
+                    'title_ar' => 'طلب جديد',
+                    'body_ar' => "طلب جديد رقم #{$order->order_id} متاح للتوصيل",
+                ],
+                'order_status',
+                $order->order_id,
+                'drivers'
+            );
+
             return ApiResponse::success(__('messages.order_created'), ['order' => $order], 201);
         } catch (Exception $e) {
             return ApiResponse::error(__('messages.failed_to_create_order'), $e->getMessage(), 500);
         }
     }
 
-    // إلغاء طلب
     public function cancel($order_id)
     {
         try {
@@ -103,13 +140,30 @@ class OrderController extends Controller
             }
 
             $order->update(['order_status' => 'cancelled']);
+
+            if ($order->driver_id && $order->driver) {
+                $this->notificationController->sendNotification(
+                    [], // Empty user_ids for topic-based notification
+                    "Order Cancelled",
+                    "Order #$order->order_id has been cancelled by the customer.",
+                    [
+                        'order_id' => $order->order_id,
+                        'payload_route' => "/order/{$order->order_id}",
+                        'title_ar' => 'تم إلغاء الطلب',
+                        'body_ar' => "تم إلغاء الطلب رقم #{$order->order_id} من قبل العميل",
+                    ],
+                    'order_status',
+                    $order->order_id,
+                    'drivers'
+
+                );
+            }
+
             return ApiResponse::success(__('messages.order_cancelled'));
         } catch (Exception $e) {
             return ApiResponse::error(__('messages.failed_to_cancel_order'), $e->getMessage(), 500);
         }
     }
-
-    // عرض طلبات العميل
     public function myOrders()
     {
         try {
@@ -127,7 +181,6 @@ class OrderController extends Controller
         }
     }
 
-    // عرض الطلبات حسب customer_id (للمسؤول)
     public function getOrdersByCustomer($customer_id)
     {
         try {
@@ -146,7 +199,6 @@ class OrderController extends Controller
         }
     }
 
-    // إضافة تقييم و مراجعة للطلب بعد اكتماله
     public function addReview(Request $request, $order_id)
     {
         try {
@@ -181,7 +233,6 @@ class OrderController extends Controller
         }
     }
 
-    // عرض كل الطلبات (للمسؤول أو المستخدم)
     public function index(Request $request)
     {
         try {
@@ -199,7 +250,6 @@ class OrderController extends Controller
         }
     }
 
-    // عرض طلب محدد
     public function show($order_id)
     {
         try {
