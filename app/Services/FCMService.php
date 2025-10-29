@@ -36,10 +36,9 @@ class FCMService
                 // 'payload_route' => $data['payload_route'] ?? '',
             ])),
         ];
-
+        
         // تحديد نوع الارسال
         if ($topic) {
-
             $messagePayload['topic'] = $topic;
         } elseif (count($tokens) === 1) {
             $messagePayload['token'] = $tokens[0];

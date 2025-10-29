@@ -164,22 +164,34 @@ class OrderController extends Controller
             return ApiResponse::error(__('messages.failed_to_cancel_order'), $e->getMessage(), 500);
         }
     }
-    public function myOrders()
+    public function myOrders(Request $request)
     {
         try {
             $user = JWTAuth::parseToken()->authenticate();
             $customer = $user->customer;
 
-            $orders = Order::with('items.product', 'address')
-                ->where('customer_id', $customer->customer_id)
-                ->orderBy('order_date', 'desc')
-                ->get();
+            if (!$customer) {
+                return ApiResponse::error(__('messages.customer_not_found'), null, 404);
+            }
 
-            return ApiResponse::success(__('messages.orders_retrieved'), ['orders' => $orders]);
-        } catch (Exception $e) {
+            $query = Order::with('items.product', 'address')
+                ->where('customer_id', $customer->customer_id);
+
+            $perPage = $request->get('per_page', 10);
+            $orders = $query->orderBy('order_date', 'desc')->paginate($perPage);
+
+            return ApiResponse::success(__('messages.orders_retrieved'), [
+                'items' => $orders->items(),
+                'current_page' => $orders->currentPage(),
+                'last_page' => $orders->lastPage(),
+                'per_page' => $orders->perPage(),
+                'total' => $orders->total(),
+            ]);
+        } catch (\Exception $e) {
             return ApiResponse::error(__('messages.failed_to_retrieve_orders'), $e->getMessage(), 500);
         }
     }
+
 
     public function getOrdersByCustomer($customer_id)
     {
@@ -233,19 +245,44 @@ class OrderController extends Controller
         }
     }
 
+    // public function index(Request $request)
+    // {
+    //     try {
+    //         $query = Order::with('items.product', 'address', 'customer.user');
+
+    //         if ($request->has('status') && !empty($request->status)) {
+    //             $query->where('order_status', $request->status);
+    //         }
+
+    //         $orders = $query->orderBy('order_date', 'desc')->get();
+
+    //         return ApiResponse::success(__('messages.orders_retrieved'), ['orders' => $orders]);
+    //     } catch (Exception $e) {
+    //         return ApiResponse::error(__('messages.failed_to_retrieve_orders'), $e->getMessage(), 500);
+    //     }
+    // }
+
     public function index(Request $request)
     {
         try {
             $query = Order::with('items.product', 'address', 'customer.user');
 
+            // فلترة حسب الحالة إذا موجودة
             if ($request->has('status') && !empty($request->status)) {
                 $query->where('order_status', $request->status);
             }
 
-            $orders = $query->orderBy('order_date', 'desc')->get();
+            $perPage = $request->get('per_page', 10);
+            $orders = $query->orderBy('order_date', 'desc')->paginate($perPage);
 
-            return ApiResponse::success(__('messages.orders_retrieved'), ['orders' => $orders]);
-        } catch (Exception $e) {
+            return ApiResponse::success(__('messages.orders_retrieved'), [
+                'items' => $orders->items(),
+                'current_page' => $orders->currentPage(),
+                'last_page' => $orders->lastPage(),
+                'per_page' => $orders->perPage(),
+                'total' => $orders->total(),
+            ]);
+        } catch (\Exception $e) {
             return ApiResponse::error(__('messages.failed_to_retrieve_orders'), $e->getMessage(), 500);
         }
     }
@@ -253,7 +290,7 @@ class OrderController extends Controller
     public function show($order_id)
     {
         try {
-            $order = Order::with('items.product', 'address', 'customer')
+            $order = Order::with('items.product', 'address', 'customer.user')
                 ->where('order_id', $order_id)
                 ->first();
 

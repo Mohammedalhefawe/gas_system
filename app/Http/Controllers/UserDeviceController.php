@@ -24,24 +24,32 @@ class UserDeviceController extends Controller
                 'app_version' => 'nullable|string',
             ]);
 
-            $device = UserDevice::updateOrCreate(
-                [
+            // تحقق إذا الـ token موجود مسبقًا
+            $device = UserDevice::where('user_id', $user->user_id)
+                ->where('device_token', $request->token)
+                ->first();
+
+            if ($device) {
+                // تحديث last_active فقط
+                $device->update(['last_active' => now()]);
+            } else {
+                // إنشاء سجل جديد إذا لم يكن موجود
+                $device = UserDevice::create([
                     'user_id' => $user->user_id,
                     'device_id' => $request->device_id,
-                ],
-                [
                     'device_token' => $request->token,
                     'device_type' => $request->platform,
                     'app_version' => $request->app_version,
                     'last_active' => now(),
-                ]
-            );
+                ]);
+            }
 
             return ApiResponse::success(__('messages.device_token_stored'), ['device' => $device], 201);
         } catch (\Exception $e) {
             return ApiResponse::error(__('messages.failed_to_store_device_token'), $e->getMessage(), 500);
         }
     }
+
 
     /**
      * Remove a device token.

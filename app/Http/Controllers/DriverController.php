@@ -204,7 +204,7 @@ class DriverController extends Controller
         }
     }
     // طلبات السائق
-    public function myOrders()
+    public function myOrders(Request $request)
     {
         try {
             $user = JWTAuth::parseToken()->authenticate();
@@ -214,16 +214,24 @@ class DriverController extends Controller
                 return ApiResponse::error(__('messages.driver_not_found'), null, 404);
             }
 
-            $orders = Order::with('items.product', 'address', 'customer.user')
-                ->where('driver_id', $driver->driver_id)
-                ->orderBy('order_date', 'desc')
-                ->get();
+            $query = Order::with('items.product', 'address', 'customer.user')
+                ->where('driver_id', $driver->driver_id);
 
-            return ApiResponse::success(__('messages.driver_orders_retrieved'), ['orders' => $orders]);
+            $perPage = $request->get('per_page', 10);
+            $orders = $query->orderBy('order_date', 'desc')->paginate($perPage);
+
+            return ApiResponse::success(__('messages.driver_orders_retrieved'), [
+                'items' => $orders->items(),
+                'current_page' => $orders->currentPage(),
+                'last_page' => $orders->lastPage(),
+                'per_page' => $orders->perPage(),
+                'total' => $orders->total(),
+            ]);
         } catch (\Exception $e) {
             return ApiResponse::error(__('messages.failed_retrieve_driver_orders'), $e->getMessage(), 500);
         }
     }
+
 
     // طلبات السائق للمسؤول
     public function getOrdersByDriverForAdmin($driver_id)

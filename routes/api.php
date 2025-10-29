@@ -169,7 +169,7 @@ Route::middleware([SetLocale::class])->group(function () {
             Route::post('start/{order_id}', [DriverController::class, 'startDelivery']);  // بدء التوصيل
             Route::post('complete/{order_id}', [DriverController::class, 'completeOrder']); // إكمال الطلب
             Route::get('my-orders', [DriverController::class, 'myOrders']); // الطلبات الخاصة بالسائق
-
+            Route::get('orders/{order_id}', [OrderController::class, 'show']); // Get order by id
         });
     });
 
