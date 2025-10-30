@@ -234,20 +234,32 @@ class DriverController extends Controller
 
 
     // طلبات السائق للمسؤول
-    public function getOrdersByDriverForAdmin($driver_id)
+    public function getOrdersByDriverForAdmin(Request $request, $driver_id)
     {
         try {
+            $perPage = $request->get('per_page', 10);
+
             $orders = Order::with('items.product', 'address', 'customer.user')
                 ->where('driver_id', $driver_id)
                 ->orderBy('order_date', 'desc')
-                ->get();
+                ->paginate($perPage);
 
-            return ApiResponse::success(__('messages.driver_orders_retrieved'), [
+            $data = [
                 'driver_id' => $driver_id,
-                'orders' => $orders
-            ]);
+                'items' => $orders->items(),
+                'current_page' => $orders->currentPage(),
+                'last_page' => $orders->lastPage(),
+                'per_page' => $orders->perPage(),
+                'total' => $orders->total(),
+            ];
+
+            return ApiResponse::success(__('messages.driver_orders_retrieved'), $data);
         } catch (\Exception $e) {
-            return ApiResponse::error(__('messages.failed_retrieve_driver_orders'), $e->getMessage(), 500);
+            return ApiResponse::error(
+                __('messages.failed_retrieve_driver_orders'),
+                $e->getMessage(),
+                500
+            );
         }
     }
 
@@ -270,18 +282,33 @@ class DriverController extends Controller
     }
 
     // عرض كل السائقين
-    public function getAllDrivers()
+    public function getAllDrivers(Request $request)
     {
         try {
+            // استلام عدد العناصر في الصفحة (افتراضي 10)
+            $perPage = $request->get('per_page', 10);
+
+            // جلب السائقين مع المستخدمين المرتبطين
             $drivers = Driver::with('user')
                 ->orderBy('driver_id', 'desc')
-                ->get();
+                ->paginate($perPage);
 
-            return ApiResponse::success(__('messages.drivers_retrieved'), [
-                'drivers' => $drivers
-            ]);
+            // تجهيز شكل البيانات المتوافق مع PaginatedModel في Flutter
+            $data = [
+                'items' => $drivers->items(),
+                'current_page' => $drivers->currentPage(),
+                'last_page' => $drivers->lastPage(),
+                'per_page' => $drivers->perPage(),
+                'total' => $drivers->total(),
+            ];
+
+            return ApiResponse::success(__('messages.drivers_retrieved'), $data);
         } catch (\Exception $e) {
-            return ApiResponse::error(__('messages.failed_retrieve_drivers'), $e->getMessage(), 500);
+            return ApiResponse::error(
+                __('messages.failed_retrieve_drivers'),
+                $e->getMessage(),
+                500
+            );
         }
     }
 }

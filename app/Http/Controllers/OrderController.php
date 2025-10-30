@@ -193,20 +193,25 @@ class OrderController extends Controller
     }
 
 
-    public function getOrdersByCustomer($customer_id)
+    public function getOrdersByCustomer(Request $request, $customer_id)
     {
         try {
-            $orders = Order::with('items.product', 'address', 'customer.user')
-                ->where('customer_id', $customer_id)
-                ->orderBy('order_date', 'desc')
-                ->get();
+            $query = Order::with('items.product', 'address', 'customer.user')
+                ->where('customer_id', $customer_id);
 
-            if ($orders->isEmpty()) {
-                return ApiResponse::error(__('messages.no_orders_for_customer'), null, 404);
-            }
+            $perPage = $request->get('per_page', 10);
+            $orders = $query->orderBy('order_date', 'desc')->paginate($perPage);
 
-            return ApiResponse::success(__('messages.orders_retrieved'), ['orders' => $orders]);
-        } catch (Exception $e) {
+          
+
+            return ApiResponse::success(__('messages.orders_retrieved'), [
+                'items'        => $orders->items(),
+                'current_page' => $orders->currentPage(),
+                'last_page'    => $orders->lastPage(),
+                'per_page'     => $orders->perPage(),
+                'total'        => $orders->total(),
+            ]);
+        } catch (\Exception $e) {
             return ApiResponse::error(__('messages.failed_to_retrieve_orders'), $e->getMessage(), 500);
         }
     }

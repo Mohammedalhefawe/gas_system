@@ -443,18 +443,26 @@ class AuthController extends Controller
         }
     }
 
-    public function getAllCustomers()
+    public function getAllCustomers(Request $request)
     {
         try {
-            $customers = Customer::with('user')->get();
+            $query = Customer::with('user');
+
+            $perPage = $request->get('per_page', 10);
+            $customers = $query->orderBy('customer_id', 'desc')->paginate($perPage);
 
             return ApiResponse::success(__('messages.customers_retrieved'), [
-                'customers' => $customers
+                'items'        => $customers->items(),
+                'current_page' => $customers->currentPage(),
+                'last_page'    => $customers->lastPage(),
+                'per_page'     => $customers->perPage(),
+                'total'        => $customers->total(),
             ]);
         } catch (\Exception $e) {
             return ApiResponse::error(__('messages.failed_to_retrieve_customers'), $e->getMessage(), 500);
         }
     }
+
 
     public function toggleBlockCustomer($customer_id)
     {
