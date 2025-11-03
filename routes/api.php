@@ -118,6 +118,8 @@ Route::middleware([SetLocale::class])->group(function () {
         Route::delete('notifications/device-tokens', [UserDeviceController::class, 'destroy']);
         Route::get('notifications', [NotificationController::class, 'index']);
         Route::post('notifications/{notification_id}/mark-read', [NotificationController::class, 'markAsRead']);
+        Route::get('notifications/unread-count', [NotificationController::class, 'unreadCount']);
+
     });
 
 

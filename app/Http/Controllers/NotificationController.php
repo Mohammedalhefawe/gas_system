@@ -7,6 +7,7 @@ use App\Models\UserDevice;
 use App\Models\User;
 use App\Services\FCMService;
 use App\Jobs\StoreTopicNotificationsJob;
+use App\Jobs\SendNotificationJob;
 use Illuminate\Http\Request;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Http\Responses\ApiResponse;
@@ -54,21 +55,31 @@ class NotificationController extends Controller
             }
 
 
-            // print_r($fcmTokenss);
             // إرسال الإشعار عبر FCM
-            $response = $this->fcmService->sendNotification(
-                $fcmTokens,
-                $title,
-                $message,
-                array_merge($data, [
+
+            // $response = $this->fcmService->sendNotification(
+            //     $fcmTokens,
+            //     $title,
+            //     $message,
+            //     array_merge($data, [
+            //         'notification_type' => $notification_type,
+            //         'related_order_id' => $related_order_id,
+            //         'action_url' => "",
+            //         'title_ar' => $data['title_ar'] ?? $title,
+            //         'body_ar' => $data['body_ar'] ?? $message,
+            //     ]),
+            //     $topic
+            // );
+
+
+            if (!empty($fcmTokens) || $topic) {
+                SendNotificationJob::dispatch($fcmTokens, $title, $message, array_merge($data, [
                     'notification_type' => $notification_type,
                     'related_order_id' => $related_order_id,
-                    'action_url' => "",
                     'title_ar' => $data['title_ar'] ?? $title,
                     'body_ar' => $data['body_ar'] ?? $message,
-                ]),
-                $topic
-            );
+                ]), $topic);
+            }
 
             // تخزين الإشعارات في قاعدة البيانات
             if (!$topic) {
@@ -114,7 +125,6 @@ class NotificationController extends Controller
         }
     }
 
-    // باقي الدوال: index و markAsRead كما هي بدون تغيير
     public function index(Request $request)
     {
         try {
@@ -171,6 +181,24 @@ class NotificationController extends Controller
             return ApiResponse::success(__('messages.notification_marked_read'));
         } catch (\Exception $e) {
             return ApiResponse::error(__('messages.failed_to_mark_notification'), $e->getMessage(), 500);
+        }
+    }
+
+
+    public function unreadCount()
+    {
+        try {
+            $user = JWTAuth::parseToken()->authenticate();
+
+            $count = Notification::where('user_id', $user->user_id)
+                ->where('is_read', false)
+                ->count();
+
+            return ApiResponse::success(__('messages.unread_notifications_count'), [
+                'unread_count' => $count,
+            ]);
+        } catch (\Exception $e) {
+            return ApiResponse::error(__('messages.failed_to_get_unread_count'), $e->getMessage(), 500);
         }
     }
 }
