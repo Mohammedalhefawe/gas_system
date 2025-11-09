@@ -21,18 +21,22 @@ use App\Http\Controllers\UserDeviceController;
 
 use App\Services\FCMService;
 
+
 Route::get('/test-fcm', function () {
     $fcm = new FCMService();
 
-    // حط هون token جهازك من Flutter
-    $testToken = 'eM4d_d6mRfiJf7BZw9RDsN:APA91bG47GdOrE2nydOls4DFuqAl9K4qgqxp7h2zgy224cvRMSpOBaWM3HY9C0xIz-IeHJOUApw-A6tlspY6beYqdCh_8xFlunYWEKMiXp6cvn2GgefPH1s';
+    $tokens = [
+        'eM4d_d6mRfiJf7BZw9RDsN:APA91bG47GdOrE2nydOls4DFuqAl9K4qgqxp7h2zgy224cvRMSpOBaWM3HY9C0xIz-IeHJOUApw-A6tlspY6beYqdCh_8xFlunYWEKMiXp6cvn2GgefPH1s', // replace with a real device token
+    ];
 
-    $response = $fcm->sendNotification(
-        [$testToken],
-        'Test Notification',
-        'This is a test from Laravel FCM!',
-        []
-    );
+    $title = 'Test Notification';
+    $message = 'Hello from Laravel FCM Service 🚀';
+
+    $response = $fcm->sendNotification($tokens, $title, $message, [
+        'title_ar' => 'إشعار تجريبي',
+        'body_ar' => 'رسالة اختبار من Laravel',
+        'related_order_id' => 123,
+    ]);
 
     return $response->json();
 });
