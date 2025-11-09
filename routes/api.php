@@ -25,12 +25,13 @@ Route::get('/test-fcm', function () {
     $fcm = new FCMService();
 
     // حط هون token جهازك من Flutter
-    $testToken = 'cF6b3CQRQ--wbqhO5L46Sr:APA91bGdjXriZIIna9VVHoqx0kCHdVKGSfCP4BCfQReSHY0G9XvYaqq3yIZvYkU4RMRTbVICOgmr3Hj18Gdu75PRyrWoPLm1EbN4gOUOr2d70gXfMcJzctI';
+    $testToken = 'eM4d_d6mRfiJf7BZw9RDsN:APA91bG47GdOrE2nydOls4DFuqAl9K4qgqxp7h2zgy224cvRMSpOBaWM3HY9C0xIz-IeHJOUApw-A6tlspY6beYqdCh_8xFlunYWEKMiXp6cvn2GgefPH1s';
 
     $response = $fcm->sendNotification(
         [$testToken],
         'Test Notification',
-        'This is a test from Laravel FCM!'
+        'This is a test from Laravel FCM!',
+        []
     );
 
     return $response->json();
