@@ -88,7 +88,7 @@ class SectorController extends Controller
         }
     }
 
-        /**
+    /**
      * Check if given latitude & longitude are inside any active sector
      */
     public function checkLatLongInSector(Request $request)
@@ -121,25 +121,24 @@ class SectorController extends Controller
 
 
     private function pointInPolygon($lat, $lng, $polygon)
-{
-    $inside = false;
-    $numPoints = count($polygon);
-    $j = $numPoints - 1;
+    {
+        $inside = false;
+        $numPoints = count($polygon);
+        $j = $numPoints - 1;
 
-    for ($i = 0; $i < $numPoints; $i++) {
-        $xi = $polygon[$i]['lat'];
-        $yi = $polygon[$i]['lng'];
-        $xj = $polygon[$j]['lat'];
-        $yj = $polygon[$j]['lng'];
+        for ($i = 0; $i < $numPoints; $i++) {
+            $xi = $polygon[$i]['lat'];
+            $yi = $polygon[$i]['lng'];
+            $xj = $polygon[$j]['lat'];
+            $yj = $polygon[$j]['lng'];
 
-        $intersect = (($yi > $lng) != ($yj > $lng)) &&
-            ($lat < ($xj - $xi) * ($lng - $yi) / (($yj - $yi) ?: 0.0000001) + $xi);
-        if ($intersect) $inside = !$inside;
+            $intersect = (($yi > $lng) != ($yj > $lng)) &&
+                ($lat < ($xj - $xi) * ($lng - $yi) / (($yj - $yi) ?: 0.0000001) + $xi);
+            if ($intersect) $inside = !$inside;
 
-        $j = $i;
+            $j = $i;
+        }
+
+        return $inside;
     }
-
-    return $inside;
-}
-
 }
