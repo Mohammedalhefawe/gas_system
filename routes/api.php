@@ -26,7 +26,7 @@ Route::get('/test-fcm', function () {
     $fcm = new FCMService();
 
     $tokens = [
-        'eM4d_d6mRfiJf7BZw9RDsN:APA91bG47GdOrE2nydOls4DFuqAl9K4qgqxp7h2zgy224cvRMSpOBaWM3HY9C0xIz-IeHJOUApw-A6tlspY6beYqdCh_8xFlunYWEKMiXp6cvn2GgefPH1s', // replace with a real device token
+        'eM4d_d6mRfiJf7BZw9RDsN:APA91bG47GdOrE2nydOls4DFuqAl9K4qgqxp7h2zgy224cvRMSpOBaWM3HY9C0xIz-IeHJOUApw-A6tlspY6beYqdCh_8xFlunYWEKMiXp6cvn2GgefPH1s'
     ];
 
     $title = 'Test Notification';

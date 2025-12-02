@@ -18,6 +18,8 @@ class FCMService
 
     public function sendNotification(array $tokens = [], string $title, string $message, array $data = [], ?string $topic = null)
     {
+
+        
         $accessToken = $this->client->fetchAccessTokenWithAssertion()['access_token'];
 
         $messagePayload = [
