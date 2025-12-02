@@ -23,7 +23,9 @@ class Driver extends Model
         'current_location',
         'rating',
         'max_capacity',
+        'sector_id',
     ];
+
 
     // Relations
     public function user()
@@ -34,5 +36,10 @@ class Driver extends Model
     public function orders()
     {
         return $this->hasMany(Order::class, 'driver_id', 'driver_id');
+    }
+
+    public function sector()
+    {
+        return $this->belongsTo(Sector::class, 'sector_id', 'sector_id');
     }
 }

@@ -22,7 +22,9 @@ class SectorController extends Controller
             'areas' => 'nullable|array',
             'polygon' => 'nullable|array',
             'is_active' => 'boolean',
+            'delivery_fee' => 'nullable|numeric|min:0', // new field
         ]);
+
 
         if ($validator->fails()) {
             return ApiResponse::error(__('messages.validation_failed'), $validator->errors(), 422);
@@ -33,7 +35,9 @@ class SectorController extends Controller
             'areas' => $request->areas,
             'polygon' => $request->polygon,
             'is_active' => $request->is_active ?? true,
+            'delivery_fee' => $request->delivery_fee ?? 0, // default 0
         ]);
+
 
         return ApiResponse::success(__('messages.sector_created'), ['sector' => $sector], 201);
     }
@@ -53,19 +57,20 @@ class SectorController extends Controller
         if (!$sector) {
             return ApiResponse::error(__('messages.sector_not_found'), null, 404);
         }
-
         $validator = Validator::make($request->all(), [
             'sector_name' => "sometimes|required|string|max:255|unique:sectors,sector_name,$id,sector_id",
             'areas' => 'nullable|array',
             'polygon' => 'nullable|array',
             'is_active' => 'boolean',
+            'delivery_fee' => 'nullable|numeric|min:0',
         ]);
+
 
         if ($validator->fails()) {
             return ApiResponse::error(__('messages.validation_failed'), $validator->errors(), 422);
         }
 
-        $sector->update($request->only(['sector_name', 'areas', 'polygon', 'is_active']));
+        $sector->update($request->only(['sector_name', 'areas', 'polygon', 'is_active', 'delivery_fee']));
 
         return ApiResponse::success(__('messages.sector_updated'), ['sector' => $sector]);
     }

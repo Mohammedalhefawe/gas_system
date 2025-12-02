@@ -18,12 +18,15 @@ class Sector extends Model
         'areas',   // JSON
         'polygon', // JSON
         'is_active',
+        'delivery_fee',
     ];
 
     protected $casts = [
         'areas' => 'array',
         'polygon' => 'array',
         'is_active' => 'boolean',
+        'delivery_fee' => 'decimal:2', // optional, ensures decimal format
+
     ];
 
     // Relations
