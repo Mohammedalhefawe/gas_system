@@ -4,7 +4,9 @@ namespace Illuminate\Cache;
 
 use Illuminate\Cache\Events\CacheFlushed;
 use Illuminate\Cache\Events\CacheFlushing;
+use Illuminate\Redis\Connections\PhpRedisClusterConnection;
 use Illuminate\Redis\Connections\PhpRedisConnection;
+use Illuminate\Redis\Connections\PredisClusterConnection;
 use Illuminate\Redis\Connections\PredisConnection;
 
 class RedisTaggedCache extends TaggedCache
@@ -110,9 +112,14 @@ class RedisTaggedCache extends TaggedCache
      */
     public function flush()
     {
-        $this->event(new CacheFlushing($this->getName()));
-
         $connection = $this->store->connection();
+
+        if ($connection instanceof PredisClusterConnection ||
+            $connection instanceof PhpRedisClusterConnection) {
+            return $this->flushClusteredConnection();
+        }
+
+        $this->event(new CacheFlushing($this->getName()));
 
         $redisPrefix = match (true) {
             $connection instanceof PhpRedisConnection => $connection->client()->getOption(\Redis::OPT_PREFIX),
@@ -122,14 +129,9 @@ class RedisTaggedCache extends TaggedCache
         $cachePrefix = $redisPrefix.$this->store->getPrefix();
 
         $cacheTags = [];
-        $keysToBeDeleted = [];
 
         foreach ($this->tags->getNames() as $name) {
             $cacheTags[] = $cachePrefix.$this->tags->tagId($name);
-        }
-
-        foreach ($this->tags->entries() as $entry) {
-            $keysToBeDeleted[] = $this->store->getPrefix().$entry;
         }
 
         $script = <<<'LUA'
@@ -145,12 +147,35 @@ class RedisTaggedCache extends TaggedCache
             end
         LUA;
 
-        $connection->eval(
-            $script,
-            count($keysToBeDeleted),
-            ...$keysToBeDeleted,
-            ...[$cachePrefix, ...$cacheTags]
-        );
+        $entries = $this->tags->entries()
+            ->map(fn (string $key) => $this->store->getPrefix().$key)
+            ->chunk(1000);
+
+        foreach ($entries as $keysToBeDeleted) {
+            $connection->eval(
+                $script,
+                count($keysToBeDeleted),
+                ...$keysToBeDeleted,
+                ...[$cachePrefix, ...$cacheTags]
+            );
+        }
+
+        $this->event(new CacheFlushed($this->getName()));
+
+        return true;
+    }
+
+    /**
+     * Remove all items from the cache.
+     *
+     * @return bool
+     */
+    protected function flushClusteredConnection()
+    {
+        $this->event(new CacheFlushing($this->getName()));
+
+        $this->flushValues();
+        $this->tags->flush();
 
         $this->event(new CacheFlushed($this->getName()));
 
@@ -168,8 +193,18 @@ class RedisTaggedCache extends TaggedCache
             ->map(fn (string $key) => $this->store->getPrefix().$key)
             ->chunk(1000);
 
+        $connection = $this->store->connection();
+
         foreach ($entries as $cacheKeys) {
-            $this->store->connection()->del(...$cacheKeys);
+            if ($connection instanceof PredisClusterConnection) {
+                $connection->pipeline(function ($connection) use ($cacheKeys) {
+                    foreach ($cacheKeys as $cacheKey) {
+                        $connection->del($cacheKey);
+                    }
+                });
+            } else {
+                $connection->del(...$cacheKeys);
+            }
         }
     }
 

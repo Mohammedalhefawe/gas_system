@@ -20,16 +20,50 @@ namespace Google\Service\Aiplatform;
 class GoogleCloudAiplatformV1GenerationConfigThinkingConfig extends \Google\Model
 {
   /**
+   * Unspecified thinking level.
+   */
+  public const THINKING_LEVEL_THINKING_LEVEL_UNSPECIFIED = 'THINKING_LEVEL_UNSPECIFIED';
+  /**
+   * Low thinking level.
+   */
+  public const THINKING_LEVEL_LOW = 'LOW';
+  /**
+   * High thinking level.
+   */
+  public const THINKING_LEVEL_HIGH = 'HIGH';
+  /**
+   * Optional. If true, the model will include its thoughts in the response.
+   * "Thoughts" are the intermediate steps the model takes to arrive at the
+   * final response. They can provide insights into the model's reasoning
+   * process and help with debugging. If this is true, thoughts are returned
+   * only when available.
+   *
    * @var bool
    */
   public $includeThoughts;
   /**
+   * Optional. The token budget for the model's thinking process. The model will
+   * make a best effort to stay within this budget. This can be used to control
+   * the trade-off between response quality and latency.
+   *
    * @var int
    */
   public $thinkingBudget;
+  /**
+   * Optional. The number of thoughts tokens that the model should generate.
+   *
+   * @var string
+   */
+  public $thinkingLevel;
 
   /**
-   * @param bool
+   * Optional. If true, the model will include its thoughts in the response.
+   * "Thoughts" are the intermediate steps the model takes to arrive at the
+   * final response. They can provide insights into the model's reasoning
+   * process and help with debugging. If this is true, thoughts are returned
+   * only when available.
+   *
+   * @param bool $includeThoughts
    */
   public function setIncludeThoughts($includeThoughts)
   {
@@ -43,7 +77,11 @@ class GoogleCloudAiplatformV1GenerationConfigThinkingConfig extends \Google\Mode
     return $this->includeThoughts;
   }
   /**
-   * @param int
+   * Optional. The token budget for the model's thinking process. The model will
+   * make a best effort to stay within this budget. This can be used to control
+   * the trade-off between response quality and latency.
+   *
+   * @param int $thinkingBudget
    */
   public function setThinkingBudget($thinkingBudget)
   {
@@ -55,6 +93,24 @@ class GoogleCloudAiplatformV1GenerationConfigThinkingConfig extends \Google\Mode
   public function getThinkingBudget()
   {
     return $this->thinkingBudget;
+  }
+  /**
+   * Optional. The number of thoughts tokens that the model should generate.
+   *
+   * Accepted values: THINKING_LEVEL_UNSPECIFIED, LOW, HIGH
+   *
+   * @param self::THINKING_LEVEL_* $thinkingLevel
+   */
+  public function setThinkingLevel($thinkingLevel)
+  {
+    $this->thinkingLevel = $thinkingLevel;
+  }
+  /**
+   * @return self::THINKING_LEVEL_*
+   */
+  public function getThinkingLevel()
+  {
+    return $this->thinkingLevel;
   }
 }
 

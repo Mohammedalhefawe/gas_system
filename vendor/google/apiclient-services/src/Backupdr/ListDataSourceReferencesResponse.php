@@ -19,16 +19,27 @@ namespace Google\Service\Backupdr;
 
 class ListDataSourceReferencesResponse extends \Google\Collection
 {
-  protected $collection_key = 'dataSourceReferences';
+  protected $collection_key = 'unreachable';
   protected $dataSourceReferencesType = DataSourceReference::class;
   protected $dataSourceReferencesDataType = 'array';
   /**
+   * A token, which can be sent as `page_token` to retrieve the next page. If
+   * this field is omitted, there are no subsequent pages.
+   *
    * @var string
    */
   public $nextPageToken;
+  /**
+   * Locations that could not be reached.
+   *
+   * @var string[]
+   */
+  public $unreachable;
 
   /**
-   * @param DataSourceReference[]
+   * The DataSourceReferences from the specified parent.
+   *
+   * @param DataSourceReference[] $dataSourceReferences
    */
   public function setDataSourceReferences($dataSourceReferences)
   {
@@ -42,7 +53,10 @@ class ListDataSourceReferencesResponse extends \Google\Collection
     return $this->dataSourceReferences;
   }
   /**
-   * @param string
+   * A token, which can be sent as `page_token` to retrieve the next page. If
+   * this field is omitted, there are no subsequent pages.
+   *
+   * @param string $nextPageToken
    */
   public function setNextPageToken($nextPageToken)
   {
@@ -54,6 +68,22 @@ class ListDataSourceReferencesResponse extends \Google\Collection
   public function getNextPageToken()
   {
     return $this->nextPageToken;
+  }
+  /**
+   * Locations that could not be reached.
+   *
+   * @param string[] $unreachable
+   */
+  public function setUnreachable($unreachable)
+  {
+    $this->unreachable = $unreachable;
+  }
+  /**
+   * @return string[]
+   */
+  public function getUnreachable()
+  {
+    return $this->unreachable;
   }
 }
 

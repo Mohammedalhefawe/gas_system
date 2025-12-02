@@ -19,51 +19,120 @@ namespace Google\Service\DataManager;
 
 class Event extends \Google\Collection
 {
+  /**
+   * Unspecified EventSource. Should never be used.
+   */
+  public const EVENT_SOURCE_EVENT_SOURCE_UNSPECIFIED = 'EVENT_SOURCE_UNSPECIFIED';
+  /**
+   * The event was generated from a web browser.
+   */
+  public const EVENT_SOURCE_WEB = 'WEB';
+  /**
+   * The event was generated from an app.
+   */
+  public const EVENT_SOURCE_APP = 'APP';
+  /**
+   * The event was generated from an in-store transaction.
+   */
+  public const EVENT_SOURCE_IN_STORE = 'IN_STORE';
+  /**
+   * The event was generated from a phone call.
+   */
+  public const EVENT_SOURCE_PHONE = 'PHONE';
+  /**
+   * The event was generated from other sources.
+   */
+  public const EVENT_SOURCE_OTHER = 'OTHER';
   protected $collection_key = 'experimentalFields';
   protected $adIdentifiersType = AdIdentifiers::class;
   protected $adIdentifiersDataType = '';
+  protected $additionalEventParametersType = EventParameter::class;
+  protected $additionalEventParametersDataType = 'array';
   protected $cartDataType = CartData::class;
   protected $cartDataDataType = '';
+  /**
+   * Optional. A unique identifier for the user instance of a web client for
+   * this GA4 web stream.
+   *
+   * @var string
+   */
+  public $clientId;
   protected $consentType = Consent::class;
   protected $consentDataType = '';
+  /**
+   * Optional. The conversion value associated with the event, for value-based
+   * conversions.
+   *
+   * @var 
+   */
   public $conversionValue;
   /**
+   * Optional. The currency code associated with all monetary values within this
+   * event.
+   *
    * @var string
    */
   public $currency;
   protected $customVariablesType = CustomVariable::class;
   protected $customVariablesDataType = 'array';
   /**
+   * Optional. Reference string used to determine the destination. If empty, the
+   * event will be sent to all destinations in the request.
+   *
    * @var string[]
    */
   public $destinationReferences;
   protected $eventDeviceInfoType = DeviceInfo::class;
   protected $eventDeviceInfoDataType = '';
   /**
+   * Optional. The name of the event. Required for GA4 events.
+   *
+   * @var string
+   */
+  public $eventName;
+  /**
+   * Optional. Signal for where the event happened (web, app, in-store, etc.).
+   *
    * @var string
    */
   public $eventSource;
   /**
+   * Required. The time the event occurred.
+   *
    * @var string
    */
   public $eventTimestamp;
   protected $experimentalFieldsType = ExperimentalField::class;
   protected $experimentalFieldsDataType = 'array';
   /**
+   * Optional. The last time the event was updated.
+   *
    * @var string
    */
   public $lastUpdatedTimestamp;
   /**
+   * Optional. The unique identifier for this event. Required for conversions
+   * using multiple data sources.
+   *
    * @var string
    */
   public $transactionId;
   protected $userDataType = UserData::class;
   protected $userDataDataType = '';
+  /**
+   * Optional. A unique identifier for a user, as defined by the advertiser.
+   *
+   * @var string
+   */
+  public $userId;
   protected $userPropertiesType = UserProperties::class;
   protected $userPropertiesDataType = '';
 
   /**
-   * @param AdIdentifiers
+   * Optional. Identifiers and other information used to match the conversion
+   * event with other online activity (such as ad clicks).
+   *
+   * @param AdIdentifiers $adIdentifiers
    */
   public function setAdIdentifiers(AdIdentifiers $adIdentifiers)
   {
@@ -77,7 +146,29 @@ class Event extends \Google\Collection
     return $this->adIdentifiers;
   }
   /**
-   * @param CartData
+   * Optional. A bucket of any [event parameters](https://developers.google.com/
+   * analytics/devguides/collection/protocol/ga4/reference/events) to be
+   * included within the event that were not already specified using other
+   * structured fields.
+   *
+   * @param EventParameter[] $additionalEventParameters
+   */
+  public function setAdditionalEventParameters($additionalEventParameters)
+  {
+    $this->additionalEventParameters = $additionalEventParameters;
+  }
+  /**
+   * @return EventParameter[]
+   */
+  public function getAdditionalEventParameters()
+  {
+    return $this->additionalEventParameters;
+  }
+  /**
+   * Optional. Information about the transaction and items associated with the
+   * event.
+   *
+   * @param CartData $cartData
    */
   public function setCartData(CartData $cartData)
   {
@@ -91,7 +182,27 @@ class Event extends \Google\Collection
     return $this->cartData;
   }
   /**
-   * @param Consent
+   * Optional. A unique identifier for the user instance of a web client for
+   * this GA4 web stream.
+   *
+   * @param string $clientId
+   */
+  public function setClientId($clientId)
+  {
+    $this->clientId = $clientId;
+  }
+  /**
+   * @return string
+   */
+  public function getClientId()
+  {
+    return $this->clientId;
+  }
+  /**
+   * Optional. Information about whether the associated user has provided
+   * different types of consent.
+   *
+   * @param Consent $consent
    */
   public function setConsent(Consent $consent)
   {
@@ -113,7 +224,10 @@ class Event extends \Google\Collection
     return $this->conversionValue;
   }
   /**
-   * @param string
+   * Optional. The currency code associated with all monetary values within this
+   * event.
+   *
+   * @param string $currency
    */
   public function setCurrency($currency)
   {
@@ -127,7 +241,10 @@ class Event extends \Google\Collection
     return $this->currency;
   }
   /**
-   * @param CustomVariable[]
+   * Optional. Additional key/value pair information to send to the conversion
+   * containers (conversion action or FL activity).
+   *
+   * @param CustomVariable[] $customVariables
    */
   public function setCustomVariables($customVariables)
   {
@@ -141,7 +258,10 @@ class Event extends \Google\Collection
     return $this->customVariables;
   }
   /**
-   * @param string[]
+   * Optional. Reference string used to determine the destination. If empty, the
+   * event will be sent to all destinations in the request.
+   *
+   * @param string[] $destinationReferences
    */
   public function setDestinationReferences($destinationReferences)
   {
@@ -155,7 +275,10 @@ class Event extends \Google\Collection
     return $this->destinationReferences;
   }
   /**
-   * @param DeviceInfo
+   * Optional. Information gathered about the device being used (if any) when
+   * the event happened.
+   *
+   * @param DeviceInfo $eventDeviceInfo
    */
   public function setEventDeviceInfo(DeviceInfo $eventDeviceInfo)
   {
@@ -169,21 +292,43 @@ class Event extends \Google\Collection
     return $this->eventDeviceInfo;
   }
   /**
-   * @param string
+   * Optional. The name of the event. Required for GA4 events.
+   *
+   * @param string $eventName
+   */
+  public function setEventName($eventName)
+  {
+    $this->eventName = $eventName;
+  }
+  /**
+   * @return string
+   */
+  public function getEventName()
+  {
+    return $this->eventName;
+  }
+  /**
+   * Optional. Signal for where the event happened (web, app, in-store, etc.).
+   *
+   * Accepted values: EVENT_SOURCE_UNSPECIFIED, WEB, APP, IN_STORE, PHONE, OTHER
+   *
+   * @param self::EVENT_SOURCE_* $eventSource
    */
   public function setEventSource($eventSource)
   {
     $this->eventSource = $eventSource;
   }
   /**
-   * @return string
+   * @return self::EVENT_SOURCE_*
    */
   public function getEventSource()
   {
     return $this->eventSource;
   }
   /**
-   * @param string
+   * Required. The time the event occurred.
+   *
+   * @param string $eventTimestamp
    */
   public function setEventTimestamp($eventTimestamp)
   {
@@ -197,7 +342,10 @@ class Event extends \Google\Collection
     return $this->eventTimestamp;
   }
   /**
-   * @param ExperimentalField[]
+   * Optional. A list of key/value pairs for experimental fields that may
+   * eventually be promoted to be part of the API.
+   *
+   * @param ExperimentalField[] $experimentalFields
    */
   public function setExperimentalFields($experimentalFields)
   {
@@ -211,7 +359,9 @@ class Event extends \Google\Collection
     return $this->experimentalFields;
   }
   /**
-   * @param string
+   * Optional. The last time the event was updated.
+   *
+   * @param string $lastUpdatedTimestamp
    */
   public function setLastUpdatedTimestamp($lastUpdatedTimestamp)
   {
@@ -225,7 +375,10 @@ class Event extends \Google\Collection
     return $this->lastUpdatedTimestamp;
   }
   /**
-   * @param string
+   * Optional. The unique identifier for this event. Required for conversions
+   * using multiple data sources.
+   *
+   * @param string $transactionId
    */
   public function setTransactionId($transactionId)
   {
@@ -239,7 +392,10 @@ class Event extends \Google\Collection
     return $this->transactionId;
   }
   /**
-   * @param UserData
+   * Optional. Pieces of user provided data, representing the user the event is
+   * associated with.
+   *
+   * @param UserData $userData
    */
   public function setUserData(UserData $userData)
   {
@@ -253,7 +409,26 @@ class Event extends \Google\Collection
     return $this->userData;
   }
   /**
-   * @param UserProperties
+   * Optional. A unique identifier for a user, as defined by the advertiser.
+   *
+   * @param string $userId
+   */
+  public function setUserId($userId)
+  {
+    $this->userId = $userId;
+  }
+  /**
+   * @return string
+   */
+  public function getUserId()
+  {
+    return $this->userId;
+  }
+  /**
+   * Optional. Advertiser-assessed information about the user at the time that
+   * the event happened.
+   *
+   * @param UserProperties $userProperties
    */
   public function setUserProperties(UserProperties $userProperties)
   {

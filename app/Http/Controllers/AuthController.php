@@ -91,6 +91,62 @@ class AuthController extends Controller
         ], 201);
     }
 
+    public function registerProvider(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'full_name' => 'required|string|max:255',
+            'phone_number' => 'required|string|unique:users,phone_number',
+            'password' => 'required|string|min:8|confirmed',
+            'sector_id' => 'required|exists:sectors,sector_id',
+            'latitude' => 'required|numeric',
+            'longitude' => 'required|numeric',
+        ]);
+
+        if ($validator->fails()) {
+            return ApiResponse::error(__('messages.validation_failed'), $validator->errors(), 422);
+        }
+
+        $user = User::create([
+            'full_name' => $request->full_name,
+            'phone_number' => $request->phone_number,
+            'password' => Hash::make($request->password),
+            'is_verified' => true,
+            'role_id' => 4, // provider role
+            'created_at' => now(),
+        ]);
+
+        $provider = Provider::create([
+            'user_id' => $user->user_id,
+            'full_name' => $request->full_name,
+            'sector_id' => $request->sector_id,
+            'latitude' => $request->latitude,
+            'longitude' => $request->longitude,
+            'is_available' => true,
+        ]);
+
+        $token = JWTAuth::fromUser($user);
+        $user->load('role');
+
+        return ApiResponse::success(__('messages.provider_registered'), [
+            'user' => [
+                'user_id' => $user->user_id,
+                'phone_number' => $user->phone_number,
+                'role' => $user->role->name,
+                'is_verified' => $user->is_verified,
+                'created_at' => $user->created_at,
+                'role_info' => [
+                    'provider_id' => $provider->provider_id,
+                    'full_name' => $provider->full_name,
+                    'sector_id' => $provider->sector_id,
+                    'latitude' => $provider->latitude,
+                    'longitude' => $provider->longitude,
+                    'is_available' => $provider->is_available,
+                ],
+            ],
+            'token' => $token,
+        ], 201);
+    }
+
     public function forgotPassword(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -341,36 +397,41 @@ class AuthController extends Controller
         ], 201);
     }
 
-    public function login(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'phone_number' => 'required|string',
-            'password' => 'required|string',
-        ]);
+   public function login(Request $request)
+{
+    $validator = Validator::make($request->all(), [
+        'phone_number' => 'required|string',
+        'password' => 'required|string',
+    ]);
 
-        if ($validator->fails()) {
-            return ApiResponse::error(__('messages.validation_failed'), $validator->errors(), 422);
-        }
+    if ($validator->fails()) {
+        return ApiResponse::error(__('messages.validation_failed'), $validator->errors(), 422);
+    }
 
-        $credentials = $request->only('phone_number', 'password');
+    $credentials = $request->only('phone_number', 'password');
 
-        if (!$token = JWTAuth::attempt($credentials)) {
-            return ApiResponse::error(__('messages.invalid_credentials'), null, 401);
-        }
+    if (!$token = JWTAuth::attempt($credentials)) {
+        return ApiResponse::error(__('messages.invalid_credentials'), null, 401);
+    }
 
-        $user = JWTAuth::user()->load('role');
+    $user = JWTAuth::user()->load('role');
 
-        if ($user->role_id == 2 && !$user->is_verified) {
-            return ApiResponse::error(__('messages.account_not_verified'), null, 403);
-        }
+    // إذا كان customer وغير مفعل
+    if ($user->role_id == 2 && !$user->is_verified) {
+        return ApiResponse::error(__('messages.account_not_verified'), null, 403);
+    }
 
-        $role_info = null;
-        if ($user->role_id == 2) {
+    $role_info = null;
+
+    switch ($user->role_id) {
+        case 2: // Customer
             $role_info = [
                 'customer_id' => $user->customer->customer_id,
                 'full_name' => $user->customer->full_name,
             ];
-        } elseif ($user->role_id == 3) {
+            break;
+
+        case 3: // Driver
             $role_info = [
                 'driver_id' => $user->driver->driver_id,
                 'full_name' => $user->driver->full_name,
@@ -378,20 +439,33 @@ class AuthController extends Controller
                 'license_number' => $user->driver->license_number,
                 'is_available' => $user->driver->is_available,
             ];
-        }
+            break;
 
-        return ApiResponse::success(__('messages.login_successful'), [
-            'user' => [
-                'user_id' => $user->user_id,
-                'phone_number' => $user->phone_number,
-                'role' => $user->role->name,
-                'is_verified' => $user->is_verified,
-                'created_at' => $user->created_at,
-                'role_info' => $role_info,
-            ],
-            'token' => $token,
-        ]);
+        case 4: // Provider
+            $role_info = [
+                'provider_id' => $user->provider->provider_id,
+                'full_name' => $user->provider->full_name,
+                'sector_id' => $user->provider->sector_id,
+                'latitude' => $user->provider->latitude,
+                'longitude' => $user->provider->longitude,
+                'is_available' => $user->provider->is_available,
+            ];
+            break;
     }
+
+    return ApiResponse::success(__('messages.login_successful'), [
+        'user' => [
+            'user_id' => $user->user_id,
+            'phone_number' => $user->phone_number,
+            'role' => $user->role->name,
+            'is_verified' => $user->is_verified,
+            'created_at' => $user->created_at,
+            'role_info' => $role_info,
+        ],
+        'token' => $token,
+    ]);
+}
+
 
     public function logout()
     {

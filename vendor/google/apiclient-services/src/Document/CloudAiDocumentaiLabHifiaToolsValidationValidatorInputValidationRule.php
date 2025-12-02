@@ -22,6 +22,8 @@ class CloudAiDocumentaiLabHifiaToolsValidationValidatorInputValidationRule exten
   protected $childAlignmentRuleType = CloudAiDocumentaiLabHifiaToolsValidationValidatorInputValidationRuleChildAlignmentRule::class;
   protected $childAlignmentRuleDataType = '';
   /**
+   * Description of the validation rule. This has no use but for documentation
+   *
    * @var string
    */
   public $description;
@@ -34,12 +36,20 @@ class CloudAiDocumentaiLabHifiaToolsValidationValidatorInputValidationRule exten
   protected $formValidationType = CloudAiDocumentaiLabHifiaToolsValidationValidatorInputValidationRuleFormValidation::class;
   protected $formValidationDataType = '';
   /**
+   * Name of the validation rule.
+   *
    * @var string
    */
   public $name;
+  /**
+   * Unique identifier of the rule. Optional.
+   *
+   * @var string
+   */
+  public $ruleId;
 
   /**
-   * @param CloudAiDocumentaiLabHifiaToolsValidationValidatorInputValidationRuleChildAlignmentRule
+   * @param CloudAiDocumentaiLabHifiaToolsValidationValidatorInputValidationRuleChildAlignmentRule $childAlignmentRule
    */
   public function setChildAlignmentRule(CloudAiDocumentaiLabHifiaToolsValidationValidatorInputValidationRuleChildAlignmentRule $childAlignmentRule)
   {
@@ -53,7 +63,9 @@ class CloudAiDocumentaiLabHifiaToolsValidationValidatorInputValidationRule exten
     return $this->childAlignmentRule;
   }
   /**
-   * @param string
+   * Description of the validation rule. This has no use but for documentation
+   *
+   * @param string $description
    */
   public function setDescription($description)
   {
@@ -67,7 +79,7 @@ class CloudAiDocumentaiLabHifiaToolsValidationValidatorInputValidationRule exten
     return $this->description;
   }
   /**
-   * @param CloudAiDocumentaiLabHifiaToolsValidationValidatorInputValidationRuleEntityAlignmentRule
+   * @param CloudAiDocumentaiLabHifiaToolsValidationValidatorInputValidationRuleEntityAlignmentRule $entityAlignmentRule
    */
   public function setEntityAlignmentRule(CloudAiDocumentaiLabHifiaToolsValidationValidatorInputValidationRuleEntityAlignmentRule $entityAlignmentRule)
   {
@@ -81,7 +93,7 @@ class CloudAiDocumentaiLabHifiaToolsValidationValidatorInputValidationRule exten
     return $this->entityAlignmentRule;
   }
   /**
-   * @param CloudAiDocumentaiLabHifiaToolsValidationValidatorInputValidationRuleFieldOccurrences
+   * @param CloudAiDocumentaiLabHifiaToolsValidationValidatorInputValidationRuleFieldOccurrences $fieldOccurrences
    */
   public function setFieldOccurrences(CloudAiDocumentaiLabHifiaToolsValidationValidatorInputValidationRuleFieldOccurrences $fieldOccurrences)
   {
@@ -95,7 +107,7 @@ class CloudAiDocumentaiLabHifiaToolsValidationValidatorInputValidationRule exten
     return $this->fieldOccurrences;
   }
   /**
-   * @param CloudAiDocumentaiLabHifiaToolsValidationValidatorInputValidationRuleFieldRegex
+   * @param CloudAiDocumentaiLabHifiaToolsValidationValidatorInputValidationRuleFieldRegex $fieldRegex
    */
   public function setFieldRegex(CloudAiDocumentaiLabHifiaToolsValidationValidatorInputValidationRuleFieldRegex $fieldRegex)
   {
@@ -109,7 +121,7 @@ class CloudAiDocumentaiLabHifiaToolsValidationValidatorInputValidationRule exten
     return $this->fieldRegex;
   }
   /**
-   * @param CloudAiDocumentaiLabHifiaToolsValidationValidatorInputValidationRuleFormValidation
+   * @param CloudAiDocumentaiLabHifiaToolsValidationValidatorInputValidationRuleFormValidation $formValidation
    */
   public function setFormValidation(CloudAiDocumentaiLabHifiaToolsValidationValidatorInputValidationRuleFormValidation $formValidation)
   {
@@ -123,7 +135,9 @@ class CloudAiDocumentaiLabHifiaToolsValidationValidatorInputValidationRule exten
     return $this->formValidation;
   }
   /**
-   * @param string
+   * Name of the validation rule.
+   *
+   * @param string $name
    */
   public function setName($name)
   {
@@ -135,6 +149,22 @@ class CloudAiDocumentaiLabHifiaToolsValidationValidatorInputValidationRule exten
   public function getName()
   {
     return $this->name;
+  }
+  /**
+   * Unique identifier of the rule. Optional.
+   *
+   * @param string $ruleId
+   */
+  public function setRuleId($ruleId)
+  {
+    $this->ruleId = $ruleId;
+  }
+  /**
+   * @return string
+   */
+  public function getRuleId()
+  {
+    return $this->ruleId;
   }
 }
 

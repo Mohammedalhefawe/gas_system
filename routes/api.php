@@ -18,7 +18,7 @@ use App\Http\Middleware\EnsureUserIsDriver;
 use App\Http\Middleware\SetLocale;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\UserDeviceController;
-
+use App\Http\Controllers\SectorController;
 use App\Services\FCMService;
 
 
@@ -55,7 +55,10 @@ Route::middleware([SetLocale::class])->group(function () {
         // Driver Registration
         Route::middleware(['auth:api', EnsureUserIsAdmin::class])->group(function () {
             Route::post('register/driver', [AuthController::class, 'registerDriver']);
+                   Route::post('register/provider', [AuthController::class, 'registerProvider']);
+
         });
+        
 
         // General Login (for all roles)
         Route::post('login', [AuthController::class, 'login']);
@@ -88,6 +91,17 @@ Route::middleware([SetLocale::class])->group(function () {
         });
     });
 
+    Route::get('sectors', [SectorController::class, 'index']);
+
+    Route::prefix('sectors')->middleware(['auth:api', EnsureUserIsAdmin::class])->group(function () {
+    Route::post('/', [SectorController::class, 'store']);
+    Route::get('{id}', [SectorController::class, 'show']);
+    Route::put('{id}', [SectorController::class, 'update']);
+    Route::delete('{id}', [SectorController::class, 'destroy']);
+
+    // Check if a lat/lng is inside a sector
+    Route::post('check-location', [SectorController::class, 'checkLatLongInSector']);
+});
 
     // PRODUCT
     Route::get('/products', [ProductController::class, 'index']);
