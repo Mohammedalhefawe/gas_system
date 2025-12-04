@@ -37,4 +37,10 @@ class Product extends Model
     {
         return $this->hasMany(ProductReview::class, 'product_id', 'product_id');
     }
+    public function providers()
+    {
+        return $this->belongsToMany(Provider::class, 'provider_products', 'product_id', 'provider_id')
+            ->withPivot('is_available')
+            ->withTimestamps();
+    }
 }

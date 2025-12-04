@@ -19,6 +19,8 @@ use App\Http\Middleware\SetLocale;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\UserDeviceController;
 use App\Http\Controllers\SectorController;
+use App\Http\Controllers\ProviderController;
+use App\Http\Middleware\EnsureUserIsProvider;
 use App\Services\FCMService;
 
 
@@ -55,10 +57,9 @@ Route::middleware([SetLocale::class])->group(function () {
         // Driver Registration
         Route::middleware(['auth:api', EnsureUserIsAdmin::class])->group(function () {
             Route::post('register/driver', [AuthController::class, 'registerDriver']);
-                   Route::post('register/provider', [AuthController::class, 'registerProvider']);
-
+            Route::post('register/provider', [AuthController::class, 'registerProvider']);
         });
-        
+
 
         // General Login (for all roles)
         Route::post('login', [AuthController::class, 'login']);
@@ -91,17 +92,17 @@ Route::middleware([SetLocale::class])->group(function () {
         });
     });
 
+    //Sectors
     Route::get('sectors', [SectorController::class, 'index']);
-
     Route::prefix('sectors')->middleware(['auth:api', EnsureUserIsAdmin::class])->group(function () {
-    Route::post('/', [SectorController::class, 'store']);
-    Route::get('{id}', [SectorController::class, 'show']);
-    Route::put('{id}', [SectorController::class, 'update']);
-    Route::delete('{id}', [SectorController::class, 'destroy']);
+        Route::post('/', [SectorController::class, 'store']);
+        Route::get('{id}', [SectorController::class, 'show']);
+        Route::put('{id}', [SectorController::class, 'update']);
+        Route::delete('{id}', [SectorController::class, 'destroy']);
 
-    // Check if a lat/lng is inside a sector
-    Route::post('check-location', [SectorController::class, 'checkLatLongInSector']);
-});
+        // Check if a lat/lng is inside a sector
+        Route::post('check-location', [SectorController::class, 'checkLatLongInSector']);
+    });
 
     // PRODUCT
     Route::get('/products', [ProductController::class, 'index']);
@@ -110,6 +111,26 @@ Route::middleware([SetLocale::class])->group(function () {
         Route::post('/products', [ProductController::class, 'store']);
         Route::put('/products/{product}', [ProductController::class, 'update']);
         Route::delete('/products/{product}', [ProductController::class, 'destroy']);
+    });
+
+
+    // Provider products management
+    Route::middleware(['auth:api', EnsureUserIsProvider::class])->group(function () {
+
+        // Get all products provider has
+        Route::get('/provider/products', [ProviderController::class, 'myProducts']);
+
+        // Add product to provider
+        Route::post('/provider/products/add', [ProviderController::class, 'addProduct']);
+
+        // Update availability of product
+        Route::post('/provider/products/update-availability', [ProviderController::class, 'updateProductAvailability']);
+
+        // Remove product from provider
+        Route::delete('/provider/products/{product_id}', [ProviderController::class, 'removeProduct']);
+
+        // Toggle provider availability (online/offline)
+        Route::post('/provider/toggle-availability', [ProviderController::class, 'toggleProviderAvailability']);
     });
 
 
@@ -138,7 +159,6 @@ Route::middleware([SetLocale::class])->group(function () {
         Route::get('notifications', [NotificationController::class, 'index']);
         Route::post('notifications/{notification_id}/mark-read', [NotificationController::class, 'markAsRead']);
         Route::get('notifications/unread-count', [NotificationController::class, 'unreadCount']);
-
     });
 
 
@@ -177,6 +197,7 @@ Route::middleware([SetLocale::class])->group(function () {
         Route::get('/customers/{customer_id}/orders', [OrderController::class, 'getOrdersByCustomer']);
         Route::get('/customers', [AuthController::class, 'getAllCustomers']);
         Route::patch('/customers/{customer_id}/toggle-block', [AuthController::class, 'toggleBlockCustomer']);
+        Route::get('/providers', [ProviderController::class, 'getAllProviders']);
     });
     // Get last delivery fee
     Route::get('/delivery-fee', [DeliveryFeeController::class, 'latest']);

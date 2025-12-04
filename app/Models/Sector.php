@@ -25,8 +25,7 @@ class Sector extends Model
         'areas' => 'array',
         'polygon' => 'array',
         'is_active' => 'boolean',
-        'delivery_fee' => 'decimal:2', // optional, ensures decimal format
-
+        'delivery_fee' => 'decimal:2', 
     ];
 
     // Relations

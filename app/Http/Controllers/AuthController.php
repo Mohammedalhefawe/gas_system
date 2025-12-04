@@ -108,7 +108,6 @@ class AuthController extends Controller
         }
 
         $user = User::create([
-            'full_name' => $request->full_name,
             'phone_number' => $request->phone_number,
             'password' => Hash::make($request->password),
             'is_verified' => true,
@@ -360,7 +359,6 @@ class AuthController extends Controller
         }
 
         $user = User::create([
-            'full_name' => $request->full_name,
             'phone_number' => $request->phone_number,
             'password' => Hash::make($request->password), 
             'is_verified' => true,

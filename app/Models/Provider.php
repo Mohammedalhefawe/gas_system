@@ -40,4 +40,10 @@ class Provider extends Model
     {
         return $this->belongsTo(Sector::class, 'sector_id', 'sector_id');
     }
+    public function products()
+    {
+        return $this->belongsToMany(Product::class, 'provider_products', 'provider_id', 'product_id')
+            ->withPivot('is_available')
+            ->withTimestamps();
+    }
 }

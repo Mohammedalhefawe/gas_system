@@ -45,6 +45,11 @@ class User extends Authenticatable implements JWTSubject
         return $this->hasOne(Driver::class, 'user_id', 'user_id');
     }
 
+    public function provider()
+    {
+        return $this->hasOne(Provider::class, 'user_id', 'user_id');
+    }
+
     public function customer()
     {
         return $this->hasOne(Customer::class, 'user_id', 'user_id');
