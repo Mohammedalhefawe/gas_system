@@ -14,9 +14,10 @@ class Order extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'customer_id', 
+        'customer_id',
         'driver_id',
         'address_id',
+        'sector_id',
         'total_amount',
         'delivery_fee',
         'order_status',
@@ -54,5 +55,10 @@ class Order extends Model
     public function notifications()
     {
         return $this->hasMany(Notification::class, 'related_order_id', 'order_id');
+    }
+
+    public function sector()
+    {
+        return $this->belongsTo(Sector::class, 'sector_id', 'sector_id');
     }
 }

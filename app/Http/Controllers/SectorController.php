@@ -6,9 +6,18 @@ use App\Models\Sector;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Responses\ApiResponse;
+use App\Services\GeoService;
 
 class SectorController extends Controller
 {
+
+
+    protected $geoService;
+
+    public function __construct(GeoService $geoService)
+    {
+        $this->geoService = $geoService;
+    }
     public function index()
     {
         $sectors = Sector::all();
@@ -116,34 +125,11 @@ class SectorController extends Controller
             if (!$sector->polygon) continue;
 
             $polygon = $sector->polygon; // array of [lat, lng] points
-            if ($this->pointInPolygon($lat, $lng, $polygon)) {
+            if (app(GeoService::class)->pointInPolygon($lat, $lng, $polygon)) {
                 return ApiResponse::success(__('messages.sector_found'), ['sector' => $sector]);
             }
         }
 
         return ApiResponse::error(__('messages.no_sector_found'), null, 404);
-    }
-
-
-    private function pointInPolygon($lat, $lng, $polygon)
-    {
-        $inside = false;
-        $numPoints = count($polygon);
-        $j = $numPoints - 1;
-
-        for ($i = 0; $i < $numPoints; $i++) {
-            $xi = $polygon[$i]['lat'];
-            $yi = $polygon[$i]['lng'];
-            $xj = $polygon[$j]['lat'];
-            $yj = $polygon[$j]['lng'];
-
-            $intersect = (($yi > $lng) != ($yj > $lng)) &&
-                ($lat < ($xj - $xi) * ($lng - $yi) / (($yj - $yi) ?: 0.0000001) + $xi);
-            if ($intersect) $inside = !$inside;
-
-            $j = $i;
-        }
-
-        return $inside;
     }
 }
