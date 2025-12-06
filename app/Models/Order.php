@@ -18,6 +18,7 @@ class Order extends Model
         'driver_id',
         'address_id',
         'sector_id',
+        'provider_id',
         'total_amount',
         'delivery_fee',
         'order_status',
@@ -31,6 +32,7 @@ class Order extends Model
         'note',
         'immediate',
     ];
+
 
     public function customer()
     {
@@ -51,6 +53,12 @@ class Order extends Model
     {
         return $this->hasMany(OrderItem::class, 'order_id', 'order_id');
     }
+    
+    public function provider()
+    {
+        return $this->belongsTo(Provider::class, 'provider_id');
+    }
+
 
     public function notifications()
     {

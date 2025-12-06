@@ -115,22 +115,28 @@ Route::middleware([SetLocale::class])->group(function () {
 
 
     // Provider products management
-    Route::middleware(['auth:api', EnsureUserIsProvider::class])->group(function () {
+    Route::prefix('provider')->middleware(['auth:api', EnsureUserIsProvider::class])->group(function () {
 
         // Get all products provider has
-        Route::get('/provider/products', [ProviderController::class, 'myProducts']);
+        Route::get('products', [ProviderController::class, 'myProducts']);
 
         // Add product to provider
-        Route::post('/provider/products/add', [ProviderController::class, 'addProduct']);
+        Route::post('products/add', [ProviderController::class, 'addProduct']);
 
         // Update availability of product
-        Route::post('/provider/products/update-availability', [ProviderController::class, 'updateProductAvailability']);
+        Route::post('products/update-availability', [ProviderController::class, 'updateProductAvailability']);
 
         // Remove product from provider
-        Route::delete('/provider/products/{product_id}', [ProviderController::class, 'removeProduct']);
+        Route::delete('products/{product_id}', [ProviderController::class, 'removeProduct']);
+        // Get orders to providers
+        Route::get('orders', [ProviderController::class, 'getOrdersByProviderSector']);
 
         // Toggle provider availability (online/offline)
-        Route::post('/provider/toggle-availability', [ProviderController::class, 'toggleProviderAvailability']);
+        Route::post('toggle-availability', [ProviderController::class, 'toggleProviderAvailability']);
+        Route::post('accept/{order_id}', [ProviderController::class, 'acceptOrder']);   // قبول الطلب
+        Route::post('reject/{order_id}', [ProviderController::class, 'rejectOrder']);   // رفض الطلب
+        Route::get('available-orders', [ProviderController::class, 'availableOrders']); // الطلبات المتاحة
+        Route::get('my-orders', [ProviderController::class, 'myOrders']);
     });
 
 
@@ -208,12 +214,18 @@ Route::middleware([SetLocale::class])->group(function () {
         Route::middleware('auth:api', EnsureUserIsDriver::class)->group(function () {
             Route::post('accept/{order_id}', [DriverController::class, 'acceptOrder']);   // قبول الطلب
             Route::post('reject/{order_id}', [DriverController::class, 'rejectOrder']);   // رفض الطلب
-            Route::post('start/{order_id}', [DriverController::class, 'startDelivery']);  // بدء التوصيل
+            Route::post('start-to-provider/{order_id}', [DriverController::class, 'startDeliveryToProvider']);  // بدء التوصيل
+            Route::post('start-to-customer/{order_id}', [DriverController::class, 'startDeliveryToCustomer']);  // بدء التوصيل
             Route::post('complete/{order_id}', [DriverController::class, 'completeOrder']); // إكمال الطلب
             Route::get('my-orders', [DriverController::class, 'myOrders']); // الطلبات الخاصة بالسائق
             Route::get('orders/{order_id}', [OrderController::class, 'show']); // Get order by id
         });
     });
+
+
+
+
+
 
 
 

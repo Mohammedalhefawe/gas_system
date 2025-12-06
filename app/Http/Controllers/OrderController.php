@@ -6,6 +6,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\UserAddress;
+use App\Models\Provider;
 use App\Models\Sector;
 use App\Services\GeoService;
 use App\Http\Controllers\NotificationController;
@@ -25,6 +26,7 @@ class OrderController extends Controller
         $this->notificationController = $notificationController;
         $this->geoService = $geoService;
     }
+
 
     public function store(Request $request)
     {
@@ -53,7 +55,6 @@ class OrderController extends Controller
             ]);
 
             $address = UserAddress::find($request->address_id);
-
             if (!$address) {
                 return ApiResponse::error(__('messages.address_not_found'), null, 404);
             }
@@ -61,23 +62,14 @@ class OrderController extends Controller
             $lat = $address->latitude;
             $lng = $address->longitude;
 
-            // البحث عن القطاع
             $sector = Sector::where('is_active', true)->get()
-                ->filter(function ($s) use ($lat, $lng) {
-                    if (!$s->polygon) return false;
-                    return app(GeoService::class)->pointInPolygon($lat, $lng, $s->polygon);
-                })
+                ->filter(fn($s) => $s->polygon && app(GeoService::class)->pointInPolygon($lat, $lng, $s->polygon))
                 ->first();
 
             if (!$sector) {
                 return ApiResponse::error(__('messages.service_not_available_in_region'), null, 404);
             }
 
-            if (!$sector) {
-                return ApiResponse::error(__('messages.service_not_available'), null, 403);
-            }
-
-            // حساب total_amount
             $total_amount = 0;
             foreach ($request->items as $item) {
                 $product = Product::find($item['product_id']);
@@ -87,13 +79,14 @@ class OrderController extends Controller
 
             $delivery_fee = $sector->delivery_fee ?? 0;
 
+            // الحالة الابتدائية للطلب: pending_provider
             $order = Order::create([
                 'customer_id' => $customer->customer_id,
                 'address_id' => $address->address_id,
-                'sector_id' => $sector->sector_id, // هنا نضيف sector_id
+                'sector_id' => $sector->sector_id,
                 'total_amount' => $total_amount,
                 'delivery_fee' => $delivery_fee,
-                'order_status' => 'pending',
+                'order_status' => 'pending_provider',
                 'payment_method' => $request->payment_method,
                 'payment_status' => 'pending',
                 'delivery_date' => $request->immediate ? null : $request->delivery_date,
@@ -115,7 +108,7 @@ class OrderController extends Controller
                 ]);
             }
 
-            // إرسال الإشعارات كما عندك
+            // إرسال إشعار للمستخدم (العميل)
             $this->notificationController->sendNotification(
                 [$user->user_id],
                 "Order Placed",
@@ -127,23 +120,31 @@ class OrderController extends Controller
                     'body_ar' => "تم تقديم طلبك رقم #{$order->order_id} بنجاح",
                 ],
                 'order_status',
-                $order->order_id,
+                $order->order_id
             );
 
-            $this->notificationController->sendNotification(
-                [],
-                'New Order',
-                "You have a new order #$order->order_id available for delivery",
-                [
-                    'order_id' => $order->order_id,
-                    'payload_route' => "/order/{$order->order_id}",
-                    'title_ar' => 'طلب جديد',
-                    'body_ar' => "طلب جديد رقم #{$order->order_id} متاح للتوصيل",
-                ],
-                'order_status',
-                $order->order_id,
-                'drivers'
-            );
+            // إرسال إشعار لجميع المزودين المتاحين في نفس القطاع
+            $availableProviders = Provider::where('sector_id', $sector->sector_id)
+                ->where('is_available', true)
+                ->pluck('user_id')
+                ->toArray();
+
+            if (!empty($availableProviders)) {
+                $this->notificationController->sendNotification(
+                    $availableProviders,
+                    "New Order",
+                    "Order #{$order->order_id} is available for acceptance in your sector",
+                    [
+                        'order_id' => $order->order_id,
+                        'payload_route' => "/orders/{$order->order_id}",
+                        'title_ar' => 'طلب جديد',
+                        'body_ar' => "هناك طلب جديد رقم #{$order->order_id} متاح في قطاعك",
+                    ],
+                    'order_status',
+                    $order->order_id,
+                    'providers'
+                );
+            }
 
             return ApiResponse::success(__('messages.order_created'), ['order' => $order], 201);
         } catch (\Exception $e) {
@@ -151,106 +152,6 @@ class OrderController extends Controller
         }
     }
 
-
-    // public function store(Request $request)
-    // {
-    //     try {
-    //         $user = JWTAuth::parseToken()->authenticate();
-    //         $customer = $user->customer;
-
-    //         if (!$customer) {
-    //             return ApiResponse::error(__('messages.customer_not_found'), null, 404);
-    //         }
-
-    //         if ($customer->blocked) {
-    //             return ApiResponse::error(__('messages.customer_blocked'), null, 403);
-    //         }
-
-    //         $request->validate([
-    //             'items' => 'required|array|min:1',
-    //             'items.*.product_id' => 'required|exists:products,product_id',
-    //             'items.*.quantity' => 'required|integer|min:1',
-    //             'address_id' => 'required|exists:user_addresses,address_id',
-    //             'payment_method' => 'required|string',
-    //             'immediate' => 'nullable|boolean',
-    //             'delivery_date' => 'required_if:immediate,false|nullable|date|after_or_equal:today',
-    //             'delivery_time' => 'required_if:immediate,false|nullable|date_format:H:i',
-    //             'note' => 'nullable|string|max:500',
-    //         ]);
-
-    //         $total_amount = 0;
-    //         foreach ($request->items as $item) {
-    //             $product = Product::find($item['product_id']);
-    //             if (!$product) continue;
-    //             $total_amount += $product->price * $item['quantity'];
-    //         }
-
-    //         $lastFee = DeliveryFee::latest('updated_at')->first();
-    //         $delivery_fee = $lastFee ? $lastFee->fee : 0;
-
-    //         $order = Order::create([
-    //             'customer_id' => $customer->customer_id,
-    //             'address_id' => $request->address_id,
-    //             'total_amount' => $total_amount,
-    //             'delivery_fee' => $delivery_fee,
-    //             'order_status' => 'pending',
-    //             'payment_method' => $request->payment_method,
-    //             'payment_status' => 'pending',
-    //             'delivery_date' => $request->immediate ? null : $request->delivery_date,
-    //             'delivery_time' => $request->immediate ? null : $request->delivery_time,
-    //             'note' => $request->note ?? null,
-    //             'immediate' => $request->immediate ?? false,
-    //         ]);
-
-    //         foreach ($request->items as $item) {
-    //             $product = Product::find($item['product_id']);
-    //             if (!$product) continue;
-
-    //             OrderItem::create([
-    //                 'order_id' => $order->order_id,
-    //                 'product_id' => $product->product_id,
-    //                 'quantity' => $item['quantity'],
-    //                 'unit_price' => $product->price,
-    //                 'subtotal' => $product->price * $item['quantity'],
-    //             ]);
-    //         }
-
-    //         // Send notification to the customer
-    //         $this->notificationController->sendNotification(
-    //             [$user->user_id],
-    //             "Order Placed",
-    //             "You have placed an order #$order->order_id successfully",
-    //             [
-    //                 'order_id' => $order->order_id,
-    //                 'payload_route' => "/order/{$order->order_id}",
-    //                 'title_ar' => 'تم تقديم الطلب',
-    //                 'body_ar' => "تم تقديم طلبك رقم #{$order->order_id} بنجاح",
-    //             ],
-    //             'order_status',
-    //             $order->order_id,
-    //         );
-
-    //         // Send notification to all drivers (using topic 'drivers')
-    //         $this->notificationController->sendNotification(
-    //             [], // Empty user_ids for topic-based notification
-    //             'New Order',
-    //             "You have a new order #$order->order_id available for delivery",
-    //             [
-    //                 'order_id' => $order->order_id,
-    //                 'payload_route' => "/order/{$order->order_id}",
-    //                 'title_ar' => 'طلب جديد',
-    //                 'body_ar' => "طلب جديد رقم #{$order->order_id} متاح للتوصيل",
-    //             ],
-    //             'order_status',
-    //             $order->order_id,
-    //             'drivers'
-    //         );
-
-    //         return ApiResponse::success(__('messages.order_created'), ['order' => $order], 201);
-    //     } catch (Exception $e) {
-    //         return ApiResponse::error(__('messages.failed_to_create_order'), $e->getMessage(), 500);
-    //     }
-    // }
 
     public function cancel($order_id)
     {
@@ -266,7 +167,7 @@ class OrderController extends Controller
                 return ApiResponse::error(__('messages.order_not_found'), null, 404);
             }
 
-            if ($order->order_status !== 'pending') {
+            if ($order->order_status !== 'pending_provider' || $order->order_status !== 'pending_driver') {
                 return ApiResponse::error(__('messages.cannot_cancel_order'), null, 400);
             }
 
@@ -286,7 +187,6 @@ class OrderController extends Controller
                     'order_status',
                     $order->order_id,
                     'drivers'
-
                 );
             }
 

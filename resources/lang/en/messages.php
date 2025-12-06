@@ -1,6 +1,7 @@
 <?php
 
 return [
+
     'validation_failed' => 'Validation failed',
     'phone_already_registered' => 'Phone number is already registered',
     'failed_to_send_sms' => 'Failed to send SMS',
@@ -29,6 +30,7 @@ return [
     'customer_blocked' => 'Customer has been blocked',
     'customer_unblocked' => 'Customer has been unblocked',
     'unauthorized' => 'Unauthorized',
+    'provider_registered' => 'Provider registered successfully',
     'ad_created' => 'Ad created successfully',
     'ad_updated' => 'Ad updated successfully',
     'ad_deleted' => 'Ad deleted successfully',
@@ -124,8 +126,6 @@ return [
     'driver_unblocked' => 'Driver has been unblocked',
     'drivers_retrieved' => 'Drivers retrieved successfully',
     'failed_retrieve_drivers' => 'Failed to retrieve drivers',
-
-    // حالات الطلبات
     'status_pending' => 'Pending',
     'status_accepted' => 'Accepted',
     'status_rejected' => 'Rejected',
@@ -168,4 +168,27 @@ return [
     'customer_not_found' => 'Customer not found.',
     'new_order_title' => 'New Order',
     'new_order_body' => 'You have a new order',
+    'provider_not_found' => 'Provider not found',
+    'provider_not_available' => 'Provider is not available',
+    'order_not_found' => 'Order not found',
+    'provider_wrong_sector' => 'Provider does not belong to the order\'s sector',
+    'order_already_taken' => 'Order has already been taken',
+    'product_not_available' => 'Product :product is not available',
+    'order_accepted_by_provider' => 'Order has been accepted by provider',
+    'failed_accept_order' => 'Failed to accept the order',
+    'order_rejected_by_provider' => 'Order has been rejected by provider',
+    'failed_reject_order' => 'Failed to reject the order',
+    'provider_products_retrieved' => 'Provider products retrieved successfully',
+    'failed_retrieve_products' => 'Failed to retrieve products',
+    'product_already_added' => 'Product is already added to provider',
+    'product_added_to_provider' => 'Product added to provider successfully',
+    'product_not_found_for_provider' => 'Product not found for this provider',
+    'product_availability_updated' => 'Product availability updated successfully',
+    'failed_update_availability' => 'Failed to update product availability',
+    'product_removed_from_provider' => 'Product removed from provider successfully',
+    'failed_remove_product' => 'Failed to remove product from provider',
+    'provider_availability_updated' => 'Provider availability status updated successfully',
+    'failed_update_provider_status' => 'Failed to update provider availability',
+    'providers_retrieved' => 'Providers retrieved successfully',
+    'failed_retrieve_providers' => 'Failed to retrieve providers',
 ];

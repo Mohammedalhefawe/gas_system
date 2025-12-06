@@ -20,6 +20,7 @@ class DriverController extends Controller
         $this->notificationController = $notificationController;
     }
 
+    // قبول الطلب من قبل السائق
     public function acceptOrder($order_id)
     {
         try {
@@ -34,8 +35,9 @@ class DriverController extends Controller
                 return ApiResponse::error(__('messages.driver_blocked'), null, 403);
             }
 
+            // التأكد من أن السائق لا يحمل طلب قيد التنفيذ
             $existingOrder = Order::where('driver_id', $driver->driver_id)
-                ->whereIn('order_status', ['accepted', 'on_the_way'])
+                ->whereIn('order_status', ['accepted', 'on_the_way_provider', 'on_the_way_customer'])
                 ->first();
 
             if ($existingOrder) {
@@ -43,11 +45,16 @@ class DriverController extends Controller
             }
 
             $order = Order::where('order_id', $order_id)
-                ->where('order_status', 'pending')
+                ->where('order_status', 'pending_driver')
                 ->first();
 
             if (!$order) {
                 return ApiResponse::error(__('messages.order_not_available'), null, 404);
+            }
+
+            // التحقق من أن السائق في نفس القطاع
+            if ($driver->sector_id !== $order->sector_id) {
+                return ApiResponse::error(__('messages.driver_wrong_sector'), null, 400);
             }
 
             $order->update([
@@ -55,7 +62,7 @@ class DriverController extends Controller
                 'order_status' => 'accepted',
             ]);
 
-            // Send notification to the customer
+            // إشعار العميل أن السائق قبل الطلب
             $this->notificationController->sendNotification(
                 [$order->customer->user->user_id],
                 "Order Accepted",
@@ -67,7 +74,7 @@ class DriverController extends Controller
                     'body_ar' => "تم قبول طلبك رقم #{$order->order_id} من قبل السائق",
                 ],
                 'order_status',
-                $order->order_id,
+                $order->order_id
             );
 
             return ApiResponse::success(__('messages.order_accepted'), ['order' => $order]);
@@ -76,6 +83,7 @@ class DriverController extends Controller
         }
     }
 
+    // رفض الطلب من قبل السائق
     public function rejectOrder($order_id)
     {
         try {
@@ -87,7 +95,7 @@ class DriverController extends Controller
             }
 
             $order = Order::where('order_id', $order_id)
-                ->where('order_status', 'accepted')
+                ->where('order_status', 'pending_driver')
                 ->first();
 
             if (!$order) {
@@ -95,15 +103,15 @@ class DriverController extends Controller
             }
 
             $order->update([
-                'driver_id' => $driver->driver_id,
-                'order_status' => 'rejected',
+                'driver_id' => null, // السماح لسائق آخر بأخذ الطلب
+                'order_status' => 'pending_driver',
             ]);
 
-            // Send notification to the customer
+            // إشعار العميل أن السائق رفض الطلب
             $this->notificationController->sendNotification(
                 [$order->customer->user->user_id],
                 "Order Rejected",
-                "Your order #$order->order_id has been rejected by a driver.",
+                "A driver rejected your order #$order->order_id.",
                 [
                     'order_id' => $order->order_id,
                     'payload_route' => "/order/{$order->order_id}",
@@ -111,7 +119,7 @@ class DriverController extends Controller
                     'body_ar' => "تم رفض طلبك رقم #{$order->order_id} من قبل السائق",
                 ],
                 'order_status',
-                $order->order_id,
+                $order->order_id
             );
 
             return ApiResponse::success(__('messages.order_rejected'), ['order' => $order]);
@@ -120,7 +128,8 @@ class DriverController extends Controller
         }
     }
 
-    public function startDelivery($order_id)
+    // بدء التوصيل من السائق إلى المزود
+    public function startDeliveryToProvider($order_id)
     {
         try {
             $user = JWTAuth::parseToken()->authenticate();
@@ -139,29 +148,71 @@ class DriverController extends Controller
                 return ApiResponse::error(__('messages.order_not_ready_delivery'), null, 404);
             }
 
-            $order->update(['order_status' => 'on_the_way']);
+            $order->update(['order_status' => 'on_the_way_provider']);
 
-            // Send notification to the customer
             $this->notificationController->sendNotification(
                 [$order->customer->user->user_id],
-                "Order On The Way",
-                "Your order #$order->order_id is on the way.",
+                "Order On The Way to Provider",
+                "Your order #$order->order_id is on the way to the provider.",
                 [
                     'order_id' => $order->order_id,
                     'payload_route' => "/order/{$order->order_id}",
-                    'title_ar' => 'الطلب في الطريق',
-                    'body_ar' => "طلبك رقم #{$order->order_id} في الطريق إليك",
+                    'title_ar' => 'الطلب في الطريق إلى المزود',
+                    'body_ar' => "طلبك رقم #{$order->order_id} في الطريق إلى المزود",
                 ],
                 'order_status',
-                $order->order_id,
+                $order->order_id
             );
 
-            return ApiResponse::success(__('messages.order_on_the_way'), ['order' => $order]);
+            return ApiResponse::success(__('messages.order_on_the_way_provider'), ['order' => $order]);
         } catch (\Exception $e) {
             return ApiResponse::error(__('messages.failed_start_delivery'), $e->getMessage(), 500);
         }
     }
 
+    // بدء التوصيل من المزود إلى العميل
+    public function startDeliveryToCustomer($order_id)
+    {
+        try {
+            $user = JWTAuth::parseToken()->authenticate();
+            $driver = $user->driver;
+
+            if (!$driver) {
+                return ApiResponse::error(__('messages.driver_not_found'), null, 404);
+            }
+
+            $order = Order::where('order_id', $order_id)
+                ->where('driver_id', $driver->driver_id)
+                ->where('order_status', 'on_the_way_provider')
+                ->first();
+
+            if (!$order) {
+                return ApiResponse::error(__('messages.order_not_ready_delivery'), null, 404);
+            }
+
+            $order->update(['order_status' => 'on_the_way_customer']);
+
+            $this->notificationController->sendNotification(
+                [$order->customer->user->user_id],
+                "Order On The Way",
+                "Your order #$order->order_id is on the way to you.",
+                [
+                    'order_id' => $order->order_id,
+                    'payload_route' => "/order/{$order->order_id}",
+                    'title_ar' => 'الطلب في الطريق إليك',
+                    'body_ar' => "طلبك رقم #{$order->order_id} في الطريق إليك",
+                ],
+                'order_status',
+                $order->order_id
+            );
+
+            return ApiResponse::success(__('messages.order_on_the_way_customer'), ['order' => $order]);
+        } catch (\Exception $e) {
+            return ApiResponse::error(__('messages.failed_start_delivery'), $e->getMessage(), 500);
+        }
+    }
+
+    // إكمال الطلب وتسليمه للعميل
     public function completeOrder($order_id)
     {
         try {
@@ -174,16 +225,18 @@ class DriverController extends Controller
 
             $order = Order::where('order_id', $order_id)
                 ->where('driver_id', $driver->driver_id)
-                ->where('order_status', 'on_the_way')
+                ->where('order_status', 'on_the_way_customer')
                 ->first();
 
             if (!$order) {
                 return ApiResponse::error(__('messages.order_not_ready_complete'), null, 404);
             }
 
-            $order->update(['order_status' => 'completed', 'payment_status' => 'paid']);
+            $order->update([
+                'order_status' => 'completed',
+                'payment_status' => 'paid'
+            ]);
 
-            // Send notification to the customer
             $this->notificationController->sendNotification(
                 [$order->customer->user->user_id],
                 "Order Completed",
@@ -195,7 +248,7 @@ class DriverController extends Controller
                     'body_ar' => "تم إكمال طلبك رقم #{$order->order_id} بنجاح",
                 ],
                 'order_status',
-                $order->order_id,
+                $order->order_id
             );
 
             return ApiResponse::success(__('messages.order_completed'), ['order' => $order]);
@@ -317,144 +370,22 @@ class DriverController extends Controller
 
 /*
 
-pending → الطلب جديد، لم يقبله أي سائق بعد
+pending_provider → الطلب جديد، لم يقبله أي مزود بعد
+
+pending_driver → الطلب جديد، لم يقبله أي سائق بعد
 
 accepted → السائق قبل الطلب ولكنه يحتاج الاتصال بالمستخدم للتأكد منه
 
 rejected → السائق رفض الطلب قبل التوصيل لأن المستخدم لم يرد أو لم يكن حقيقي
 
-on_the_way → الطلب قيد التوصيل
+on_the_way_provider →  جاري جلب الطلب من المزود
+
+on_the_way_customer →  الطلب في الطريق للمتسخدم
 
 completed → تم تسليم الطلب بنجاح
 
-cancelled → المستخدم ألغى الطلب قبل التسليم                     
+cancelled → (accepted) المستخدم ألغى الطلب قبل ان تصبح الحالة                    
 
 */
 
 
-
-    // // قبول طلب
-    // public function acceptOrder($order_id)
-    // {
-    //     try {
-    //         $user = JWTAuth::parseToken()->authenticate();
-    //         $driver = $user->driver;
-
-    //         if (!$driver) {
-    //             return ApiResponse::error(__('messages.driver_not_found'), null, 404);
-    //         }
-
-    //         if ($driver->blocked) {
-    //             return ApiResponse::error(__('messages.driver_blocked'), null, 403);
-    //         }
-
-    //         $existingOrder = Order::where('driver_id', $driver->driver_id)
-    //             ->whereIn('order_status', ['accepted', 'on_the_way'])
-    //             ->first();
-
-    //         if ($existingOrder) {
-    //             return ApiResponse::error(__('messages.driver_has_ongoing_order'), null, 400);
-    //         }
-
-    //         $order = Order::where('order_id', $order_id)
-    //             ->where('order_status', 'pending')
-    //             ->first();
-
-    //         if (!$order) {
-    //             return ApiResponse::error(__('messages.order_not_available'), null, 404);
-    //         }
-
-    //         $order->update([
-    //             'driver_id' => $driver->driver_id,
-    //             'order_status' => 'accepted',
-    //         ]);
-
-    //         return ApiResponse::success(__('messages.order_accepted'), ['order' => $order]);
-    //     } catch (\Exception $e) {
-    //         return ApiResponse::error(__('messages.failed_accept_order'), $e->getMessage(), 500);
-    //     }
-    // }
-
-    // // رفض طلب
-    // public function rejectOrder($order_id)
-    // {
-    //     try {
-    //         $user = JWTAuth::parseToken()->authenticate();
-    //         $driver = $user->driver;
-
-    //         if (!$driver) {
-    //             return ApiResponse::error(__('messages.driver_not_found'), null, 404);
-    //         }
-
-    //         $order = Order::where('order_id', $order_id)
-    //             ->where('order_status', 'accepted')
-    //             ->first();
-
-    //         if (!$order) {
-    //             return ApiResponse::error(__('messages.order_not_available'), null, 404);
-    //         }
-
-    //         $order->update([
-    //             'driver_id' => $driver->driver_id,
-    //             'order_status' => 'rejected',
-    //         ]);
-
-    //         return ApiResponse::success(__('messages.order_rejected'), ['order' => $order]);
-    //     } catch (\Exception $e) {
-    //         return ApiResponse::error(__('messages.failed_reject_order'), $e->getMessage(), 500);
-    //     }
-    // }
-
-    // // بدء التوصيل
-    // public function startDelivery($order_id)
-    // {
-    //     try {
-    //         $user = JWTAuth::parseToken()->authenticate();
-    //         $driver = $user->driver;
-
-    //         if (!$driver) {
-    //             return ApiResponse::error(__('messages.driver_not_found'), null, 404);
-    //         }
-
-    //         $order = Order::where('order_id', $order_id)
-    //             ->where('driver_id', $driver->driver_id)
-    //             ->where('order_status', 'accepted')
-    //             ->first();
-
-    //         if (!$order) {
-    //             return ApiResponse::error(__('messages.order_not_ready_delivery'), null, 404);
-    //         }
-
-    //         $order->update(['order_status' => 'on_the_way']);
-    //         return ApiResponse::success(__('messages.order_on_the_way'), ['order' => $order]);
-    //     } catch (\Exception $e) {
-    //         return ApiResponse::error(__('messages.failed_start_delivery'), $e->getMessage(), 500);
-    //     }
-    // }
-
-    // // إكمال الطلب
-    // public function completeOrder($order_id)
-    // {
-    //     try {
-    //         $user = JWTAuth::parseToken()->authenticate();
-    //         $driver = $user->driver;
-
-    //         if (!$driver) {
-    //             return ApiResponse::error(__('messages.driver_not_found'), null, 404);
-    //         }
-
-    //         $order = Order::where('order_id', $order_id)
-    //             ->where('driver_id', $driver->driver_id)
-    //             ->where('order_status', 'on_the_way')
-    //             ->first();
-
-    //         if (!$order) {
-    //             return ApiResponse::error(__('messages.order_not_ready_complete'), null, 404);
-    //         }
-
-    //         $order->update(['order_status' => 'completed', 'payment_status' => 'paid']);
-    //         return ApiResponse::success(__('messages.order_completed'), ['order' => $order]);
-    //     } catch (\Exception $e) {
-    //         return ApiResponse::error(__('messages.failed_complete_order'), $e->getMessage(), 500);
-    //     }
-    // }
